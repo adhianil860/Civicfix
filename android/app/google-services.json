@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "951988090266",
+    "project_id": "civic-fix-82a79",
+    "storage_bucket": "civic-fix-82a79.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:951988090266:android:88619fcbc732268ad23623",
+        "android_client_info": {
+          "package_name": "com.example.civicfic"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyB0SboA954z56uaTfXterTRACTbOqklKxI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
