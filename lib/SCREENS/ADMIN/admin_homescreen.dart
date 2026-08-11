@@ -7,7 +7,6 @@ import 'package:civicfic/services/firestore_service.dart';
 import 'package:civicfic/models/complaint_model.dart';
 import 'package:civicfic/models/announcement_model.dart';
 import 'package:civicfic/providers/settings_provider.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:provider/provider.dart';
 

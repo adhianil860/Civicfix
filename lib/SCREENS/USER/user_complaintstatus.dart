@@ -1,10 +1,8 @@
 import 'package:civicfic/WIDGETS/empty_state_widget.dart';
 import 'package:civicfic/WIDGETS/loading_widget.dart';
 import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:civicfic/services/firestore_service.dart';
-import 'package:civicfic/services/notification_service.dart';
 import 'package:civicfic/models/complaint_model.dart';
 import 'package:civicfic/providers/settings_provider.dart';
 import 'package:provider/provider.dart';
