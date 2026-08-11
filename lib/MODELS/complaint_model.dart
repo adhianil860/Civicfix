@@ -14,6 +14,10 @@ class ComplaintModel {
   final String status;
   final DateTime createdAt;
   final DateTime updatedAt;
+  
+  // 👇 ADD THESE TWO FIELDS
+  final double? latitude;
+  final double? longitude;
 
   ComplaintModel({
     required this.id,
@@ -29,6 +33,9 @@ class ComplaintModel {
     this.status = 'Pending',
     required this.createdAt,
     required this.updatedAt,
+    // 👇 Add here
+    this.latitude,
+    this.longitude,
   });
 
   Map<String, dynamic> toMap() {
@@ -45,6 +52,9 @@ class ComplaintModel {
       'status': status,
       'createdAt': createdAt,
       'updatedAt': updatedAt,
+      // 👇 Add here
+      'latitude': latitude,
+      'longitude': longitude,
     };
   }
 
@@ -63,6 +73,9 @@ class ComplaintModel {
       status: map['status'] ?? 'Pending',
       createdAt: (map['createdAt'] as dynamic).toDate(),
       updatedAt: (map['updatedAt'] as dynamic).toDate(),
+      // 👇 Add here
+      latitude: map['latitude']?.toDouble(),
+      longitude: map['longitude']?.toDouble(),
     );
   }
 

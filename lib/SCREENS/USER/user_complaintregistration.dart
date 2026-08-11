@@ -13,6 +13,11 @@ import 'package:civicfic/models/complaint_model.dart';
 import 'package:civicfic/providers/settings_provider.dart';
 import 'package:provider/provider.dart';
 
+// 👇 MAP PACKAGES
+import 'package:map_picker/map_picker.dart';
+import 'package:latlong2/latlong.dart';
+// import 'package:geocoding/geocoding.dart'; // 👈 Remove if not working
+
 class UserComplaintregistration extends StatefulWidget {
   const UserComplaintregistration({super.key});
 
@@ -28,6 +33,10 @@ class _UserComplaintregistrationState extends State<UserComplaintregistration> {
 
   String? selectedCategory;
   String? selectedPriority;
+
+  // 👇 Location variables
+  double? selectedLatitude;
+  double? selectedLongitude;
 
   final ImagePicker picker = ImagePicker();
 
@@ -77,6 +86,48 @@ class _UserComplaintregistrationState extends State<UserComplaintregistration> {
     NotificationService().showInfo(context, 'Image uploaded successfully!');
   }
 
+  // ========== PICK LOCATION FROM MAP ==========
+  Future<void> _pickLocationFromMap() async {
+    try {
+      final result = await Navigator.push<MapPickerResult>(
+        context,
+        MaterialPageRoute(
+          builder: (context) => const MapPickerScreen(),
+        ),
+      );
+
+      if (result != null && mounted) {
+        String address = await _getAddressFromCoordinates(
+          result.latitude,
+          result.longitude,
+        );
+
+        setState(() {
+          selectedLatitude = result.latitude;
+          selectedLongitude = result.longitude;
+          locationController.text = address;
+        });
+
+        NotificationService().showInfo(
+          context,
+          '📍 Location selected successfully!',
+        );
+      }
+    } catch (e) {
+      NotificationService().showError(
+        context,
+        'Failed to pick location: $e',
+      );
+    }
+  }
+
+  // ========== GET ADDRESS FROM COORDINATES ==========
+  // ✅ Fixed - No geocoding dependency
+  Future<String> _getAddressFromCoordinates(double lat, double lng) async {
+    // Return coordinates as location
+    return '📍 ${lat.toStringAsFixed(6)}, ${lng.toStringAsFixed(6)}';
+  }
+
   Future<void> _submitComplaint() async {
     String? titleError = ValidationService.validateTitle(titleController.text.trim());
     if (titleError != null) {
@@ -115,6 +166,14 @@ class _UserComplaintregistrationState extends State<UserComplaintregistration> {
       return;
     }
 
+    if (selectedLatitude == null || selectedLongitude == null) {
+      NotificationService().showError(
+        context,
+        'Please select location from map using 📍 button',
+      );
+      return;
+    }
+
     setState(() {
       _isLoading = true;
     });
@@ -142,13 +201,15 @@ class _UserComplaintregistrationState extends State<UserComplaintregistration> {
         status: 'Pending',
         createdAt: DateTime.now(),
         updatedAt: DateTime.now(),
+        latitude: selectedLatitude,
+        longitude: selectedLongitude,
       );
 
       await _firestoreService.addComplaint(complaint);
 
       NotificationService().showSuccess(
         context,
-        'Complaint Submitted Successfully!',
+        'Complaint Submitted Successfully! 🎉',
       );
 
       titleController.clear();
@@ -159,6 +220,8 @@ class _UserComplaintregistrationState extends State<UserComplaintregistration> {
         selectedPriority = null;
         selectedImage = null;
         imageString = null;
+        selectedLatitude = null;
+        selectedLongitude = null;
         _isLoading = false;
       });
 
@@ -183,6 +246,27 @@ class _UserComplaintregistrationState extends State<UserComplaintregistration> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              Center(
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      colors: [Colors.blue, Colors.purple],
+                    ),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: const Text(
+                    "📝 Register Complaint",
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 25),
+
               Text(
                 "Complaint Title",
                 style: TextStyle(
@@ -209,9 +293,6 @@ class _UserComplaintregistrationState extends State<UserComplaintregistration> {
                   ),
                   filled: true,
                   fillColor: settings.isDarkMode ? Colors.grey[800] : Colors.grey.shade50,
-                  labelStyle: TextStyle(
-                    color: settings.isDarkMode ? Colors.grey[400] : Colors.grey[600],
-                  ),
                 ),
               ),
 
@@ -244,116 +325,123 @@ class _UserComplaintregistrationState extends State<UserComplaintregistration> {
                   ),
                   filled: true,
                   fillColor: settings.isDarkMode ? Colors.grey[800] : Colors.grey.shade50,
-                  labelStyle: TextStyle(
-                    color: settings.isDarkMode ? Colors.grey[400] : Colors.grey[600],
-                  ),
                 ),
               ),
 
               const SizedBox(height: 20),
 
-              Text(
-                "Category",
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 16,
-                  color: settings.isDarkMode ? Colors.white : Colors.black,
-                ),
-              ),
-              const SizedBox(height: 8),
-              DropdownButtonFormField<String>(
-                value: selectedCategory,
-                dropdownColor: settings.isDarkMode ? Colors.grey[800] : Colors.white,
-                style: TextStyle(
-                  color: settings.isDarkMode ? Colors.white : Colors.black,
-                ),
-                decoration: InputDecoration(
-                  border: border,
-                  prefixIcon: Icon(
-                    Icons.category,
-                    color: settings.isDarkMode ? Colors.grey[400] : Colors.grey[600],
-                  ),
-                  filled: true,
-                  fillColor: settings.isDarkMode ? Colors.grey[800] : Colors.grey.shade50,
-                  labelStyle: TextStyle(
-                    color: settings.isDarkMode ? Colors.grey[400] : Colors.grey[600],
-                  ),
-                ),
-                hint: Text(
-                  "Select Category",
-                  style: TextStyle(
-                    color: settings.isDarkMode ? Colors.grey[500] : Colors.grey[400],
-                  ),
-                ),
-                items: categories.map((category) {
-                  return DropdownMenuItem(
-                    value: category,
-                    child: Text(
-                      category,
-                      style: TextStyle(
-                        color: settings.isDarkMode ? Colors.white : Colors.black,
-                      ),
+              Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          "Category",
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                            color: settings.isDarkMode ? Colors.white : Colors.black,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        DropdownButtonFormField<String>(
+                          value: selectedCategory,
+                          dropdownColor: settings.isDarkMode ? Colors.grey[800] : Colors.white,
+                          style: TextStyle(
+                            color: settings.isDarkMode ? Colors.white : Colors.black,
+                          ),
+                          decoration: InputDecoration(
+                            border: border,
+                            prefixIcon: Icon(
+                              Icons.category,
+                              color: settings.isDarkMode ? Colors.grey[400] : Colors.grey[600],
+                            ),
+                            filled: true,
+                            fillColor: settings.isDarkMode ? Colors.grey[800] : Colors.grey.shade50,
+                          ),
+                          hint: Text(
+                            "Select",
+                            style: TextStyle(
+                              color: settings.isDarkMode ? Colors.grey[500] : Colors.grey[400],
+                            ),
+                          ),
+                          items: categories.map((category) {
+                            return DropdownMenuItem(
+                              value: category,
+                              child: Text(
+                                category,
+                                style: TextStyle(
+                                  color: settings.isDarkMode ? Colors.white : Colors.black,
+                                ),
+                              ),
+                            );
+                          }).toList(),
+                          onChanged: (value) {
+                            setState(() {
+                              selectedCategory = value;
+                            });
+                          },
+                        ),
+                      ],
                     ),
-                  );
-                }).toList(),
-                onChanged: (value) {
-                  setState(() {
-                    selectedCategory = value;
-                  });
-                },
-              ),
-
-              const SizedBox(height: 20),
-
-              Text(
-                "Priority",
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 16,
-                  color: settings.isDarkMode ? Colors.white : Colors.black,
-                ),
-              ),
-              const SizedBox(height: 8),
-              DropdownButtonFormField<String>(
-                value: selectedPriority,
-                dropdownColor: settings.isDarkMode ? Colors.grey[800] : Colors.white,
-                style: TextStyle(
-                  color: settings.isDarkMode ? Colors.white : Colors.black,
-                ),
-                decoration: InputDecoration(
-                  border: border,
-                  prefixIcon: Icon(
-                    Icons.priority_high,
-                    color: settings.isDarkMode ? Colors.grey[400] : Colors.grey[600],
                   ),
-                  filled: true,
-                  fillColor: settings.isDarkMode ? Colors.grey[800] : Colors.grey.shade50,
-                  labelStyle: TextStyle(
-                    color: settings.isDarkMode ? Colors.grey[400] : Colors.grey[600],
-                  ),
-                ),
-                hint: Text(
-                  "Select Priority",
-                  style: TextStyle(
-                    color: settings.isDarkMode ? Colors.grey[500] : Colors.grey[400],
-                  ),
-                ),
-                items: priorities.map((priority) {
-                  return DropdownMenuItem(
-                    value: priority,
-                    child: Text(
-                      priority,
-                      style: TextStyle(
-                        color: settings.isDarkMode ? Colors.white : Colors.black,
-                      ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          "Priority",
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                            color: settings.isDarkMode ? Colors.white : Colors.black,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        DropdownButtonFormField<String>(
+                          value: selectedPriority,
+                          dropdownColor: settings.isDarkMode ? Colors.grey[800] : Colors.white,
+                          style: TextStyle(
+                            color: settings.isDarkMode ? Colors.white : Colors.black,
+                          ),
+                          decoration: InputDecoration(
+                            border: border,
+                            prefixIcon: Icon(
+                              Icons.priority_high,
+                              color: settings.isDarkMode ? Colors.grey[400] : Colors.grey[600],
+                            ),
+                            filled: true,
+                            fillColor: settings.isDarkMode ? Colors.grey[800] : Colors.grey.shade50,
+                          ),
+                          hint: Text(
+                            "Select",
+                            style: TextStyle(
+                              color: settings.isDarkMode ? Colors.grey[500] : Colors.grey[400],
+                            ),
+                          ),
+                          items: priorities.map((priority) {
+                            return DropdownMenuItem(
+                              value: priority,
+                              child: Text(
+                                priority,
+                                style: TextStyle(
+                                  color: settings.isDarkMode ? Colors.white : Colors.black,
+                                ),
+                              ),
+                            );
+                          }).toList(),
+                          onChanged: (value) {
+                            setState(() {
+                              selectedPriority = value;
+                            });
+                          },
+                        ),
+                      ],
                     ),
-                  );
-                }).toList(),
-                onChanged: (value) {
-                  setState(() {
-                    selectedPriority = value;
-                  });
-                },
+                  ),
+                ],
               ),
 
               const SizedBox(height: 20),
@@ -367,32 +455,99 @@ class _UserComplaintregistrationState extends State<UserComplaintregistration> {
                 ),
               ),
               const SizedBox(height: 8),
-              TextField(
-                controller: locationController,
-                style: TextStyle(
-                  color: settings.isDarkMode ? Colors.white : Colors.black,
-                ),
-                decoration: InputDecoration(
-                  hintText: "Enter complaint location",
-                  hintStyle: TextStyle(
-                    color: settings.isDarkMode ? Colors.grey[500] : Colors.grey[400],
+              Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      controller: locationController,
+                      readOnly: true,
+                      style: TextStyle(
+                        color: settings.isDarkMode ? Colors.white : Colors.black,
+                      ),
+                      decoration: InputDecoration(
+                        hintText: "Tap 📍 to select location",
+                        hintStyle: TextStyle(
+                          color: settings.isDarkMode ? Colors.grey[500] : Colors.grey[400],
+                        ),
+                        border: border,
+                        prefixIcon: Icon(
+                          Icons.location_on,
+                          color: settings.isDarkMode ? Colors.grey[400] : Colors.grey[600],
+                        ),
+                        filled: true,
+                        fillColor: settings.isDarkMode ? Colors.grey[800] : Colors.grey.shade50,
+                      ),
+                    ),
                   ),
-                  border: border,
-                  prefixIcon: Icon(
-                    Icons.location_on,
-                    color: settings.isDarkMode ? Colors.grey[400] : Colors.grey[600],
+                  const SizedBox(width: 8),
+                  Container(
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        colors: [Colors.blue, Colors.purple],
+                      ),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Material(
+                      color: Colors.transparent,
+                      child: InkWell(
+                        onTap: _pickLocationFromMap,
+                        borderRadius: BorderRadius.circular(12),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 16,
+                          ),
+                          child: const Icon(
+                            Icons.map,
+                            color: Colors.white,
+                            size: 24,
+                          ),
+                        ),
+                      ),
+                    ),
                   ),
-                  filled: true,
-                  fillColor: settings.isDarkMode ? Colors.grey[800] : Colors.grey.shade50,
-                  labelStyle: TextStyle(
-                    color: settings.isDarkMode ? Colors.grey[400] : Colors.grey[600],
-                  ),
-                ),
+                ],
               ),
 
-              const SizedBox(height: 25),
+              if (selectedLatitude != null && selectedLongitude != null)
+                Padding(
+                  padding: const EdgeInsets.only(top: 8),
+                  child: Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: Colors.green.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: Colors.green.withOpacity(0.3)),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.check_circle, color: Colors.green, size: 16),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            '📍 ${selectedLatitude!.toStringAsFixed(6)}, ${selectedLongitude!.toStringAsFixed(6)}',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: settings.isDarkMode ? Colors.white : Colors.black,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
 
-              // Upload Image
+              const SizedBox(height: 20),
+
+              Text(
+                "Upload Image",
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                  color: settings.isDarkMode ? Colors.white : Colors.black,
+                ),
+              ),
+              const SizedBox(height: 8),
               SizedBox(
                 width: double.infinity,
                 height: 55,
@@ -403,7 +558,7 @@ class _UserComplaintregistrationState extends State<UserComplaintregistration> {
                     color: settings.isDarkMode ? Colors.grey[400] : Colors.blue.shade300,
                   ),
                   label: Text(
-                    "Upload Image",
+                    selectedImage != null ? "Change Image" : "Upload Image",
                     style: TextStyle(
                       fontSize: 16,
                       color: settings.isDarkMode ? Colors.grey[400] : Colors.black,
@@ -422,7 +577,6 @@ class _UserComplaintregistrationState extends State<UserComplaintregistration> {
 
               const SizedBox(height: 15),
 
-              // Image Preview
               if (selectedImage != null)
                 Stack(
                   children: [
@@ -430,7 +584,7 @@ class _UserComplaintregistrationState extends State<UserComplaintregistration> {
                       borderRadius: BorderRadius.circular(12),
                       child: Image.memory(
                         selectedImage!,
-                        height: 220,
+                        height: 200,
                         width: double.infinity,
                         fit: BoxFit.cover,
                       ),
@@ -458,7 +612,6 @@ class _UserComplaintregistrationState extends State<UserComplaintregistration> {
 
               const SizedBox(height: 30),
 
-              // Submit Button
               SizedBox(
                 width: double.infinity,
                 height: 55,
@@ -498,4 +651,161 @@ class _UserComplaintregistrationState extends State<UserComplaintregistration> {
       ),
     );
   }
+}
+
+// ========== MAP PICKER SCREEN ==========
+class MapPickerScreen extends StatefulWidget {
+  const MapPickerScreen({super.key});
+
+  @override
+  State<MapPickerScreen> createState() => _MapPickerScreenState();
+}
+
+class _MapPickerScreenState extends State<MapPickerScreen> {
+  // 👇 Required for MapPicker
+  final MapPickerController _controller = MapPickerController();
+  late LatLng _currentPosition;
+
+  @override
+  void initState() {
+    super.initState();
+    _currentPosition = const LatLng(10.0, 76.0);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Select Location'),
+        backgroundColor: Colors.blue,
+        foregroundColor: Colors.white,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.check),
+            onPressed: () {
+              Navigator.pop(
+                context,
+                MapPickerResult(
+                  latitude: _currentPosition.latitude,
+                  longitude: _currentPosition.longitude,
+                ),
+              );
+            },
+          ),
+        ],
+      ),
+      body: Stack(
+        children: [
+          MapPicker(
+            mapPickerController: _controller,
+            child: Container(
+              color: Colors.grey.shade200,
+              child: const Center(
+                child: Text(
+                  'Loading Map...',
+                  style: TextStyle(fontSize: 16),
+                ),
+              ),
+            ),
+          ),
+          
+          // Center crosshair
+          Center(
+            child: Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                color: Colors.blue.withOpacity(0.2),
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: Colors.blue,
+                  width: 3,
+                ),
+              ),
+              child: const Icon(
+                Icons.location_on,
+                color: Colors.blue,
+                size: 24,
+              ),
+            ),
+          ),
+          
+          // Bottom buttons
+          Positioned(
+            bottom: 40,
+            left: 20,
+            right: 20,
+            child: Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.2),
+                    blurRadius: 10,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: () {
+                        Navigator.pop(context);
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.grey,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                      ),
+                      child: const Text('Cancel'),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: () {
+                        Navigator.pop(
+                          context,
+                          MapPickerResult(
+                            latitude: _currentPosition.latitude,
+                            longitude: _currentPosition.longitude,
+                          ),
+                        );
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.blue,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                      ),
+                      child: const Text('Confirm'),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ========== MAP PICKER RESULT CLASS ==========
+class MapPickerResult {
+  final double latitude;
+  final double longitude;
+
+  MapPickerResult({
+    required this.latitude,
+    required this.longitude,
+  });
 }

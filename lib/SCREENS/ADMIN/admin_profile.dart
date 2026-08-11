@@ -1,4 +1,5 @@
 import 'package:civicfic/models/user_model.dart';
+import 'package:civicfic/screens/admin/admin_homescreen.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:civicfic/screens/login_screen.dart';
@@ -379,7 +380,7 @@ class _AdminProfileState extends State<AdminProfile> {
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.white),
           onPressed: () {
-            Navigator.pop(context); // Back to Admin Home
+            Navigator.push(context,MaterialPageRoute(builder:(context) => AdminHomeScreen(),)); // Back to Admin Home
           },
         ),
         actions: [

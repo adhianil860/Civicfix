@@ -31,16 +31,9 @@ class _UserHomepageState extends State<UserHomepage> {
   }
 
   void _navigateToPage(int index) {
-    // 👇 Fix: Profile page (index 3) handle cheyyuka
-    if (index == 3) {
-      setState(() {
-        selectedPage = 3;  // Profile page open
-      });
-    } else {
-      setState(() {
-        selectedPage = index;
-      });
-    }
+    setState(() {
+      selectedPage = index;
+    });
   }
 
   void _showAnnouncements() {
@@ -279,19 +272,9 @@ class _UserHomepageState extends State<UserHomepage> {
           const UserProfile(),
         ],
       ),
-      // 👇 Bottom Navigation Bar - 3 items
       bottomNavigationBar: BottomNavigationBar(
-        currentIndex: selectedPage == 3 ? 0 : selectedPage,  // 👈 Fix: Profile select cheyyumbo 0 aakum
-        onTap: (index) {
-          // Bottom nav il click cheyyumbo
-          if (index == 0) {
-            _navigateToPage(0); // Home
-          } else if (index == 1) {
-            _navigateToPage(1); // Report
-          } else if (index == 2) {
-            _navigateToPage(2); // Complaints
-          }
-        },
+        currentIndex: selectedPage,
+        onTap: _navigateToPage,
         backgroundColor: settings.isDarkMode ? Colors.grey[850] : Colors.white,
         selectedItemColor: Colors.blue,
         unselectedItemColor: settings.isDarkMode ? Colors.grey[400] : Colors.grey,
@@ -313,13 +296,18 @@ class _UserHomepageState extends State<UserHomepage> {
             activeIcon: Icon(Icons.list_alt),
             label: 'Complaints',
           ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.person_outline),
+            activeIcon: Icon(Icons.person),
+            label: 'Profile',
+          ),
         ],
       ),
     );
   }
 }
 
-// ========== HOMECONTENT (Same as before) ==========
+// ========== HOMECONTENT ==========
 class HomeContent extends StatelessWidget {
   final Function(int)? navigateToPage;
   final FirestoreService _firestoreService = FirestoreService();

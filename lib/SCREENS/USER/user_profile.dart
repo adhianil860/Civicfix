@@ -1,3 +1,4 @@
+import 'package:civicfic/SCREENS/USER/user_homepage.dart';
 import 'package:civicfic/WIDGETS/loading_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -449,7 +450,7 @@ class _UserProfileState extends State<UserProfile> {
             color: settings.isDarkMode ? Colors.white : Colors.blue.shade700,
           ),
           onPressed: () {
-            Navigator.pop(context); // Back to Home
+          Navigator.push(context,MaterialPageRoute(builder:(context) => UserHomepage(),)); // Back to Home
           },
         ),
         actions: [
