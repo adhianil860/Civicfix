@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:civicfic/screens/user/user_complaintregistration.dart';
 import 'package:civicfic/screens/user/user_complaintstatus.dart';
 import 'package:civicfic/screens/user/user_profile.dart';
+import 'package:civicfic/screens/user/user_notifications.dart';
 import 'package:civicfic/services/firestore_service.dart';
 import 'package:civicfic/services/notification_service.dart';
 import 'package:civicfic/models/complaint_model.dart';
@@ -22,13 +23,6 @@ class _UserHomepageState extends State<UserHomepage> {
   int selectedPage = 0;
   final FirestoreService _firestoreService = FirestoreService();
 
-  String _getGreeting() {
-    var hour = DateTime.now().hour;
-    if (hour < 12) return "Good Morning! 🌅";
-    if (hour < 17) return "Good Afternoon! ☀️";
-    return "Good Evening! 🌙";
-  }
-
   void _navigateToPage(int index) {
     setState(() {
       selectedPage = index;
@@ -39,144 +33,155 @@ class _UserHomepageState extends State<UserHomepage> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
+      backgroundColor: Colors.transparent,
       builder: (context) => DraggableScrollableSheet(
         initialChildSize: 0.85,
         minChildSize: 0.5,
         maxChildSize: 0.95,
         expand: false,
-        builder: (context, scrollController) => Column(
-          children: [
-            Center(
-              child: Container(
-                width: 50,
-                height: 5,
-                margin: const EdgeInsets.only(top: 12),
-                decoration: BoxDecoration(
-                  color: Colors.grey.shade300,
-                  borderRadius: BorderRadius.circular(10),
-                ),
-              ),
+        builder: (context, scrollController) {
+          final isDark = Provider.of<SettingsProvider>(context).isDarkMode;
+          return Container(
+            decoration: BoxDecoration(
+              color: isDark ? const Color(0xFF1E293B) : Colors.white,
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
             ),
-            const SizedBox(height: 12),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(10),
+            child: Column(
+              children: [
+                Center(
+                  child: Container(
+                    width: 40,
+                    height: 5,
+                    margin: const EdgeInsets.only(top: 12),
                     decoration: BoxDecoration(
-                      color: Colors.blue.shade100,
-                      borderRadius: BorderRadius.circular(12),
+                      color: isDark ? Colors.grey[700] : Colors.grey[300],
+                      borderRadius: BorderRadius.circular(10),
                     ),
-                    child: const Icon(Icons.campaign, color: Colors.blue, size: 24),
                   ),
-                  const SizedBox(width: 12),
-                  const Text(
-                    "Announcements",
-                    style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
-                  ),
-                  const Spacer(),
-                  IconButton(
-                    icon: const Icon(Icons.close),
-                    onPressed: () => Navigator.pop(context),
-                  ),
-                ],
-              ),
-            ),
-            const Divider(height: 20),
-            Expanded(
-              child: StreamBuilder<List<AnnouncementModel>>(
-                stream: _firestoreService.getAnnouncements(),
-                builder: (context, snapshot) {
-                  if (snapshot.connectionState == ConnectionState.waiting) {
-                    return const Center(child: CircularProgressIndicator());
-                  }
-                  if (snapshot.hasError) {
-                    return Center(child: Text('Error: ${snapshot.error}'));
-                  }
-                  if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                    return const Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(Icons.notifications_off, size: 60, color: Colors.grey),
-                          SizedBox(height: 12),
-                          Text(
-                            "No announcements yet",
-                            style: TextStyle(fontSize: 16, color: Colors.grey),
-                          ),
-                        ],
-                      ),
-                    );
-                  }
-                  final announcements = snapshot.data!;
-                  return ListView.builder(
-                    controller: scrollController,
-                    padding: const EdgeInsets.symmetric(horizontal: 20),
-                    itemCount: announcements.length,
-                    itemBuilder: (context, index) {
-                      final announcement = announcements[index];
-                      return Container(
-                        margin: const EdgeInsets.only(bottom: 12),
-                        padding: const EdgeInsets.all(16),
+                ),
+                const SizedBox(height: 16),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(10),
                         decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            colors: [Colors.blue.shade50, Colors.purple.shade50],
+                          color: const Color(0xFF4F46E5).withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: const Icon(Icons.campaign, color: Color(0xFF4F46E5), size: 24),
+                      ),
+                      const SizedBox(width: 12),
+                      Text(
+                        "Announcements",
+                        style: TextStyle(
+                          fontSize: 22,
+                          fontWeight: FontWeight.bold,
+                          color: isDark ? Colors.white : Colors.black87,
+                        ),
+                      ),
+                      const Spacer(),
+                      IconButton(
+                        icon: Icon(Icons.close, color: isDark ? Colors.grey[400] : Colors.grey[600]),
+                        onPressed: () => Navigator.pop(context),
+                      ),
+                    ],
+                  ),
+                ),
+                const Divider(height: 24),
+                Expanded(
+                  child: StreamBuilder<List<AnnouncementModel>>(
+                    stream: _firestoreService.getAnnouncements(),
+                    builder: (context, snapshot) {
+                      if (snapshot.connectionState == ConnectionState.waiting) {
+                        return const Center(child: CircularProgressIndicator(color: Color(0xFF4F46E5)));
+                      }
+                      if (snapshot.hasError) {
+                        return Center(child: Text('Error: ${snapshot.error}', style: TextStyle(color: isDark ? Colors.white : Colors.black)));
+                      }
+                      if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                        return Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(Icons.notifications_off, size: 60, color: isDark ? Colors.grey[600] : Colors.grey[400]),
+                              const SizedBox(height: 12),
+                              Text(
+                                "No announcements yet",
+                                style: TextStyle(fontSize: 16, color: isDark ? Colors.grey[400] : Colors.grey[600]),
+                              ),
+                            ],
                           ),
-                          borderRadius: BorderRadius.circular(14),
-                          border: Border.all(color: Colors.blue.shade200),
-                        ),
-                        child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.all(8),
-                              decoration: BoxDecoration(
-                                color: Colors.blue.shade100,
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: const Icon(
-                                Icons.notifications_active,
-                                color: Colors.blue,
-                                size: 20,
-                              ),
+                        );
+                      }
+                      final announcements = snapshot.data!;
+                      return ListView.builder(
+                        controller: scrollController,
+                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                        itemCount: announcements.length,
+                        itemBuilder: (context, index) {
+                          final announcement = announcements[index];
+                          return Container(
+                            key: ValueKey(announcement.id),
+                            margin: const EdgeInsets.only(bottom: 16),
+                            padding: const EdgeInsets.all(16),
+                            decoration: BoxDecoration(
+                              color: isDark ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC),
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(color: isDark ? Colors.grey[800]! : Colors.grey[200]!),
                             ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    announcement.text,
-                                    style: const TextStyle(
-                                      fontSize: 15,
-                                      fontWeight: FontWeight.w500,
-                                    ),
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.all(10),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFF4F46E5).withOpacity(0.1),
+                                    shape: BoxShape.circle,
                                   ),
-                                  Text(
-                                    announcement.formattedDate,
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      color: Colors.grey.shade500,
-                                    ),
+                                  child: const Icon(
+                                    Icons.notifications_active,
+                                    color: Color(0xFF4F46E5),
+                                    size: 20,
                                   ),
-                                ],
-                              ),
+                                ),
+                                const SizedBox(width: 16),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        announcement.text,
+                                        style: TextStyle(
+                                          fontSize: 15,
+                                          fontWeight: FontWeight.w600,
+                                          color: isDark ? Colors.white : Colors.black87,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 6),
+                                      Text(
+                                        announcement.formattedDate,
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          color: isDark ? Colors.grey[400] : Colors.grey[600],
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
                             ),
-                          ],
-                        ),
+                          );
+                        },
                       );
                     },
-                  );
-                },
-              ),
+                  ),
+                ),
+              ],
             ),
-            const SizedBox(height: 12),
-          ],
-        ),
+          );
+        },
       ),
     );
   }
@@ -185,32 +190,35 @@ class _UserHomepageState extends State<UserHomepage> {
   Widget build(BuildContext context) {
     final settings = Provider.of<SettingsProvider>(context);
     final user = FirebaseAuth.instance.currentUser;
+    final isDark = settings.isDarkMode;
 
     return Scaffold(
-      backgroundColor: settings.isDarkMode ? Colors.grey[900] : Colors.grey.shade50,
+      backgroundColor: isDark ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC),
       appBar: AppBar(
-        leading: IconButton(
-          icon: CircleAvatar(
-            radius: 16,
-            backgroundColor: settings.isDarkMode ? Colors.grey[700] : Colors.blue.shade100,
-            child: FutureBuilder<UserModel?>(
-              future: user != null ? _firestoreService.getUser(user.uid) : null,
-              builder: (context, snapshot) {
-                if (!snapshot.hasData || snapshot.data == null) {
-                  return const Icon(Icons.person, size: 18, color: Colors.blue);
-                }
-                return Text(
-                  snapshot.data!.name[0].toUpperCase(),
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.bold,
-                    color: settings.isDarkMode ? Colors.white : Colors.blue,
-                  ),
-                );
-              },
+        leading: Padding(
+          padding: const EdgeInsets.all(8.0),
+          child: GestureDetector(
+            onTap: () => _navigateToPage(3),
+            child: CircleAvatar(
+              backgroundColor: const Color(0xFF4F46E5).withOpacity(0.1),
+              child: FutureBuilder<UserModel?>(
+                future: user != null ? _firestoreService.getUser(user.uid) : null,
+                builder: (context, snapshot) {
+                  if (!snapshot.hasData || snapshot.data == null) {
+                    return const Icon(Icons.person, size: 20, color: Color(0xFF4F46E5));
+                  }
+                  return Text(
+                    snapshot.data!.name[0].toUpperCase(),
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF4F46E5),
+                    ),
+                  );
+                },
+              ),
             ),
           ),
-          onPressed: () => _navigateToPage(3),
         ),
         title: Row(
           mainAxisSize: MainAxisSize.min,
@@ -218,87 +226,145 @@ class _UserHomepageState extends State<UserHomepage> {
             Container(
               padding: const EdgeInsets.all(6),
               decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: [Colors.blue, Colors.purple],
-                ),
+                color: const Color(0xFF4F46E5).withOpacity(0.1),
                 borderRadius: BorderRadius.circular(10),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.blue.withOpacity(0.4),
-                    blurRadius: 12,
-                    spreadRadius: 2,
-                  ),
-                ],
               ),
               child: Image.asset(
                 "assets/images/CivicFix_logo.png",
-                height: 28,
+                height: 24,
                 fit: BoxFit.contain,
+                errorBuilder: (context, error, stackTrace) => const Icon(Icons.build, color: Color(0xFF4F46E5), size: 24),
               ),
             ),
-            const SizedBox(width: 8),
+            const SizedBox(width: 10),
             Text(
               "CivicFix",
               style: TextStyle(
                 fontWeight: FontWeight.bold,
-                fontSize: 18,
-                letterSpacing: 1,
-                color: settings.isDarkMode ? Colors.white : Colors.blue,
+                fontSize: 20,
+                letterSpacing: 0.5,
+                color: isDark ? Colors.white : Colors.black87,
               ),
             ),
           ],
         ),
         centerTitle: true,
         elevation: 0,
-        backgroundColor: settings.isDarkMode ? Colors.grey[900] : Colors.white,
-        foregroundColor: settings.isDarkMode ? Colors.white : Colors.blue.shade700,
+        backgroundColor: isDark ? const Color(0xFF0F172A) : Colors.white,
+        scrolledUnderElevation: 0,
         actions: [
-          IconButton(
-            icon: Icon(
-              Icons.notifications_outlined,
-              color: settings.isDarkMode ? Colors.white : Colors.blue.shade700,
-            ),
-            onPressed: _showAnnouncements,
+          StreamBuilder<int>(
+            stream: user != null
+                ? _firestoreService.getUnreadNotificationCount(user.uid)
+                : const Stream.empty(),
+            builder: (context, snapshot) {
+              final unreadCount = snapshot.data ?? 0;
+              return Padding(
+                padding: const EdgeInsets.only(right: 8.0),
+                child: IconButton(
+                  icon: Stack(
+                    clipBehavior: Clip.none,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: isDark ? Colors.grey[800] : Colors.grey[100],
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(
+                          Icons.notifications_outlined,
+                          color: isDark ? Colors.white : Colors.black87,
+                          size: 24,
+                        ),
+                      ),
+                      if (unreadCount > 0)
+                        Positioned(
+                          right: -2,
+                          top: -2,
+                          child: Container(
+                            padding: const EdgeInsets.all(4),
+                            decoration: BoxDecoration(
+                              color: Colors.redAccent,
+                              shape: BoxShape.circle,
+                              border: Border.all(color: isDark ? const Color(0xFF0F172A) : Colors.white, width: 2),
+                            ),
+                            child: Text(
+                              unreadCount > 9 ? '9+' : '$unreadCount',
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 10,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                  onPressed: () => _navigateToPage(4),
+                ),
+              );
+            },
           ),
         ],
       ),
       body: IndexedStack(
         index: selectedPage,
         children: [
-          HomeContent(navigateToPage: _navigateToPage),
+          HomeContent(
+            navigateToPage: _navigateToPage,
+            showAnnouncements: _showAnnouncements,
+          ),
           const UserComplaintregistration(),
           const UserComplaintstatus(),
           const UserProfile(),
+          const UserNotificationsScreen(),
         ],
       ),
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: selectedPage,
-        onTap: _navigateToPage,
-        backgroundColor: settings.isDarkMode ? Colors.grey[850] : Colors.white,
-        selectedItemColor: Colors.blue,
-        unselectedItemColor: settings.isDarkMode ? Colors.grey[400] : Colors.grey,
-        type: BottomNavigationBarType.fixed,
+      bottomNavigationBar: NavigationBar(
+        selectedIndex: selectedPage,
+        onDestinationSelected: _navigateToPage,
+        backgroundColor: isDark ? const Color(0xFF1E293B) : Colors.white,
+        indicatorColor: const Color(0xFF4F46E5).withOpacity(0.2),
         elevation: 8,
-        items: const [
-          BottomNavigationBarItem(
+        labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
+        destinations: [
+          const NavigationDestination(
             icon: Icon(Icons.home_outlined),
-            activeIcon: Icon(Icons.home),
+            selectedIcon: Icon(Icons.home, color: Color(0xFF4F46E5)),
             label: 'Home',
           ),
-          BottomNavigationBarItem(
+          const NavigationDestination(
             icon: Icon(Icons.add_circle_outline),
-            activeIcon: Icon(Icons.add_circle),
+            selectedIcon: Icon(Icons.add_circle, color: Color(0xFF4F46E5)),
             label: 'Report',
           ),
-          BottomNavigationBarItem(
+          const NavigationDestination(
             icon: Icon(Icons.list_alt_outlined),
-            activeIcon: Icon(Icons.list_alt),
-            label: 'Complaints',
+            selectedIcon: Icon(Icons.list_alt, color: Color(0xFF4F46E5)),
+            label: 'History',
           ),
-          BottomNavigationBarItem(
+          const NavigationDestination(
             icon: Icon(Icons.person_outline),
-            activeIcon: Icon(Icons.person),
+            selectedIcon: Icon(Icons.person, color: Color(0xFF4F46E5)),
             label: 'Profile',
+          ),
+          NavigationDestination(
+            icon: StreamBuilder<int>(
+              stream: user != null ? _firestoreService.getUnreadNotificationCount(user.uid) : const Stream.empty(),
+              builder: (context, snapshot) {
+                final count = snapshot.data ?? 0;
+                if (count > 0) {
+                  return Badge(
+                    label: Text('$count'),
+                    backgroundColor: Colors.redAccent,
+                    child: const Icon(Icons.notifications_outlined),
+                  );
+                }
+                return const Icon(Icons.notifications_outlined);
+              },
+            ),
+            selectedIcon: const Icon(Icons.notifications, color: Color(0xFF4F46E5)),
+            label: 'Alerts',
           ),
         ],
       ),
@@ -306,137 +372,133 @@ class _UserHomepageState extends State<UserHomepage> {
   }
 }
 
-// ========== HOMECONTENT ==========
 class HomeContent extends StatelessWidget {
   final Function(int)? navigateToPage;
+  final VoidCallback? showAnnouncements;
   final FirestoreService _firestoreService = FirestoreService();
 
-  HomeContent({super.key, this.navigateToPage});
+  HomeContent({super.key, this.navigateToPage, this.showAnnouncements});
 
   String _getGreeting() {
     var hour = DateTime.now().hour;
-    if (hour < 12) return "Good Morning! 🌅";
-    if (hour < 17) return "Good Afternoon! ☀️";
-    return "Good Evening! 🌙";
+    if (hour < 12) return "Good Morning";
+    if (hour < 17) return "Good Afternoon";
+    return "Good Evening";
   }
 
   @override
   Widget build(BuildContext context) {
     final settings = Provider.of<SettingsProvider>(context);
     final user = FirebaseAuth.instance.currentUser;
+    final isDark = settings.isDarkMode;
 
     return SingleChildScrollView(
       physics: const BouncingScrollPhysics(),
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Welcome Header
+          // Hero Banner
           Container(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(24),
             decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [Colors.blue.shade700, Colors.purple.shade600],
+              gradient: const LinearGradient(
+                colors: [Color(0xFF4F46E5), Color(0xFF3B82F6)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
               ),
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(24),
+              boxShadow: [
+                BoxShadow(
+                  color: const Color(0xFF4F46E5).withOpacity(0.3),
+                  blurRadius: 15,
+                  offset: const Offset(0, 8),
+                ),
+              ],
             ),
             child: Row(
               children: [
-                CircleAvatar(
-                  radius: 28,
-                  backgroundColor: Colors.white.withOpacity(0.2),
-                  child: FutureBuilder<UserModel?>(
-                    future: user != null ? _firestoreService.getUser(user.uid) : null,
-                    builder: (context, snapshot) {
-                      if (!snapshot.hasData || snapshot.data == null) {
-                        return const Icon(Icons.person, color: Colors.white, size: 28);
-                      }
-                      return Text(
-                        snapshot.data!.name[0].toUpperCase(),
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 22,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      );
-                    },
-                  ),
-                ),
-                const SizedBox(width: 12),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        _getGreeting(),
+                        "${_getGreeting()} 👋",
                         style: const TextStyle(
                           color: Colors.white70,
-                          fontSize: 12,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
                         ),
                       ),
+                      const SizedBox(height: 6),
                       FutureBuilder<UserModel?>(
                         future: user != null ? _firestoreService.getUser(user.uid) : null,
                         builder: (context, snapshot) {
-                          if (!snapshot.hasData || snapshot.data == null) {
-                            return const Text(
-                              "User",
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            );
+                          String name = "User";
+                          if (snapshot.hasData && snapshot.data != null) {
+                            name = snapshot.data!.name;
                           }
                           return Text(
-                            snapshot.data!.name,
+                            name,
                             style: const TextStyle(
                               color: Colors.white,
-                              fontSize: 16,
+                              fontSize: 22,
                               fontWeight: FontWeight.bold,
                             ),
                           );
                         },
                       ),
-                    ],
-                  ),
-                ),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.2),
-                    borderRadius: BorderRadius.circular(14),
-                  ),
-                  child: Row(
-                    children: [
-                      const Icon(Icons.star, color: Colors.amber, size: 12),
-                      const SizedBox(width: 3),
-                      Text(
-                        "4.8",
-                        style: TextStyle(
-                          color: Colors.white.withOpacity(0.9),
-                          fontSize: 11,
-                          fontWeight: FontWeight.bold,
+                      const SizedBox(height: 16),
+                      ElevatedButton.icon(
+                        onPressed: () => navigateToPage?.call(1),
+                        icon: const Icon(Icons.add, size: 18),
+                        label: const Text("New Report"),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.white,
+                          foregroundColor: const Color(0xFF4F46E5),
+                          elevation: 0,
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
                         ),
                       ),
                     ],
                   ),
                 ),
+                GestureDetector(
+                  onTap: showAnnouncements,
+                  child: Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: const Icon(Icons.campaign, color: Colors.white, size: 32),
+                  ),
+                ),
               ],
             ),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 24),
 
-          // Quick Stats
+          // Live Stats
+          Text(
+            "Overview",
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: isDark ? Colors.white : Colors.black87,
+            ),
+          ),
+          const SizedBox(height: 12),
           StreamBuilder<List<ComplaintModel>>(
             stream: user != null
                 ? _firestoreService.getUserComplaints(user.uid)
                 : Stream.value([]),
             builder: (context, snapshot) {
-              if (snapshot.connectionState == ConnectionState.waiting) {
-                return _buildStatsShimmer(settings);
-              }
-              if (snapshot.hasError) {
-                return _buildStatsShimmer(settings);
+              if (snapshot.connectionState == ConnectionState.waiting || snapshot.hasError) {
+                return _buildStatsShimmer(isDark);
               }
               final complaints = snapshot.data ?? [];
               int total = complaints.length;
@@ -448,212 +510,86 @@ class HomeContent extends StatelessWidget {
                 shrinkWrap: true,
                 physics: const NeverScrollableScrollPhysics(),
                 crossAxisCount: 2,
-                mainAxisSpacing: 12,
-                crossAxisSpacing: 12,
-                childAspectRatio: 1.5,
+                mainAxisSpacing: 16,
+                crossAxisSpacing: 16,
+                childAspectRatio: 1.6,
                 children: [
-                  _buildStatCard("Total", total.toString(), Icons.assignment, Colors.blue, settings),
-                  _buildStatCard("Pending", pending.toString(), Icons.pending, Colors.orange, settings),
-                  _buildStatCard("Progress", inProgress.toString(), Icons.sync, Colors.purple, settings),
-                  _buildStatCard("Resolved", resolved.toString(), Icons.check_circle, Colors.green, settings),
+                  _buildStatCard("Total", total.toString(), Icons.analytics, const Color(0xFF4F46E5), isDark),
+                  _buildStatCard("Pending", pending.toString(), Icons.pending_actions, Colors.orange, isDark),
+                  _buildStatCard("In Progress", inProgress.toString(), Icons.sync, Colors.purple, isDark),
+                  _buildStatCard("Resolved", resolved.toString(), Icons.check_circle_outline, Colors.green, isDark),
                 ],
               );
             },
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 24),
 
-          // Quick Actions
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: _cardDecoration(settings),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  "Quick Actions",
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.bold,
-                    color: settings.isDarkMode ? Colors.white : Colors.black,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Row(
-                  children: [
-                    Expanded(
-                      child: _buildActionCard(
-                        Icons.add_circle,
-                        "Report",
-                        Colors.blue,
-                        () => navigateToPage?.call(1),
-                        settings,
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: _buildActionCard(
-                        Icons.list_alt,
-                        "History",
-                        Colors.purple,
-                        () => navigateToPage?.call(2),
-                        settings,
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: _buildActionCard(
-                        Icons.person,
-                        "Profile",
-                        Colors.green,
-                        () => navigateToPage?.call(3),
-                        settings,
-                      ),
-                    ),
-                  ],
-                ),
-              ],
+          // Categories Grid
+          Text(
+            "Quick Categories",
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: isDark ? Colors.white : Colors.black87,
             ),
           ),
           const SizedBox(height: 12),
-
-          // Categories
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: _cardDecoration(settings),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  "Categories",
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.bold,
-                    color: settings.isDarkMode ? Colors.white : Colors.black,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Wrap(
-                  spacing: 6,
-                  runSpacing: 6,
-                  children: [
-                    _buildCategoryChip(Icons.construction, "Road", Colors.orange, settings),
-                    _buildCategoryChip(Icons.lightbulb, "Light", Colors.amber, settings),
-                    _buildCategoryChip(Icons.delete, "Garbage", Colors.green, settings),
-                    _buildCategoryChip(Icons.water_drop, "Water", Colors.blue, settings),
-                    _buildCategoryChip(Icons.park, "Tree", Colors.teal, settings),
-                    _buildCategoryChip(Icons.pets, "Animal", Colors.pink, settings),
-                  ],
-                ),
-              ],
-            ),
+          GridView.count(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            crossAxisCount: 3,
+            mainAxisSpacing: 16,
+            crossAxisSpacing: 16,
+            childAspectRatio: 0.9,
+            children: [
+              _buildCategoryCard(Icons.construction, "Road", Colors.orange, isDark),
+              _buildCategoryCard(Icons.lightbulb, "Light", Colors.amber, isDark),
+              _buildCategoryCard(Icons.delete_outline, "Garbage", Colors.green, isDark),
+              _buildCategoryCard(Icons.water_drop, "Water", Colors.blue, isDark),
+              _buildCategoryCard(Icons.traffic, "Traffic", Colors.redAccent, isDark),
+              _buildCategoryCard(Icons.park, "Tree", Colors.teal, isDark),
+            ],
           ),
-          const SizedBox(height: 12),
-
-          // Recent Complaints
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: _cardDecoration(settings),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      "Recent Complaints",
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.bold,
-                        color: settings.isDarkMode ? Colors.white : Colors.black,
-                      ),
-                    ),
-                    TextButton(
-                      onPressed: () => navigateToPage?.call(2),
-                      child: Text(
-                        "View All",
-                        style: TextStyle(
-                          fontSize: 11,
-                          color: settings.isDarkMode ? Colors.blue[200] : Colors.blue,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                StreamBuilder<List<ComplaintModel>>(
-                  stream: user != null
-                      ? _firestoreService.getUserComplaints(user.uid)
-                      : Stream.value([]),
-                  builder: (context, snapshot) {
-                    if (snapshot.connectionState == ConnectionState.waiting) {
-                      return const Center(
-                        child: Padding(
-                          padding: EdgeInsets.all(12),
-                          child: CircularProgressIndicator(),
-                        ),
-                      );
-                    }
-                    if (snapshot.hasError || !snapshot.hasData || snapshot.data!.isEmpty) {
-                      return Padding(
-                        padding: const EdgeInsets.all(12),
-                        child: Center(
-                          child: Column(
-                            children: [
-                              Icon(Icons.inbox, size: 32, color: Colors.grey),
-                              const SizedBox(height: 4),
-                              Text(
-                                "No complaints yet",
-                                style: TextStyle(fontSize: 12, color: Colors.grey),
-                              ),
-                            ],
-                          ),
-                        ),
-                      );
-                    }
-                    final complaints = snapshot.data!.take(3).toList();
-                    return Column(
-                      children: complaints.map((complaint) {
-                        return _buildRecentComplaintTile(complaint, settings);
-                      }).toList(),
-                    );
-                  },
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 24),
 
           // Civic Tip
           Container(
-            padding: const EdgeInsets.all(12),
+            padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [Colors.blue.shade50, Colors.purple.shade50],
-              ),
-              borderRadius: BorderRadius.circular(12),
+              color: isDark ? const Color(0xFF1E293B) : const Color(0xFFF0FDF4),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: isDark ? Colors.grey[800]! : Colors.green.shade200),
             ),
             child: Row(
               children: [
-                const Icon(Icons.lightbulb, color: Colors.amber, size: 24),
-                const SizedBox(width: 8),
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.green.withOpacity(0.1),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(Icons.lightbulb_outline, color: Colors.green, size: 28),
+                ),
+                const SizedBox(width: 16),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        "💡 Civic Tip",
+                        "Community Tip",
                         style: TextStyle(
-                          fontSize: 13,
+                          fontSize: 15,
                           fontWeight: FontWeight.bold,
-                          color: settings.isDarkMode ? Colors.white : Colors.black,
+                          color: isDark ? Colors.white : Colors.green.shade800,
                         ),
                       ),
-                      const SizedBox(height: 2),
+                      const SizedBox(height: 4),
                       Text(
-                        "Add clear photos and description for faster resolution",
+                        "Add clear photos and exact locations for faster resolution.",
                         style: TextStyle(
-                          fontSize: 11,
-                          color: settings.isDarkMode ? Colors.grey[400] : Colors.grey.shade700,
+                          fontSize: 13,
+                          color: isDark ? Colors.grey[400] : Colors.green.shade700,
+                          height: 1.3,
                         ),
                       ),
                     ],
@@ -662,138 +598,109 @@ class HomeContent extends StatelessWidget {
               ],
             ),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 24),
 
           // Emergency Contacts
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: _cardDecoration(settings),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  "Emergency Contacts",
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.bold,
-                    color: settings.isDarkMode ? Colors.white : Colors.black,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Row(
-                  children: [
-                    Expanded(
-                      child: _buildEmergencyCard(
-                        Icons.local_police,
-                        "Police",
-                        "100",
-                        Colors.blue,
-                        context,
-                        settings,
-                      ),
-                    ),
-                    const SizedBox(width: 6),
-                    Expanded(
-                      child: _buildEmergencyCard(
-                        Icons.local_hospital,
-                        "Ambulance",
-                        "108",
-                        Colors.red,
-                        context,
-                        settings,
-                      ),
-                    ),
-                    const SizedBox(width: 6),
-                    Expanded(
-                      child: _buildEmergencyCard(
-                        Icons.fire_truck,
-                        "Fire",
-                        "101",
-                        Colors.orange,
-                        context,
-                        settings,
-                      ),
-                    ),
-                  ],
-                ),
-              ],
+          Text(
+            "Emergency Contacts",
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: isDark ? Colors.white : Colors.black87,
             ),
           ),
           const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(child: _buildEmergencyCard(Icons.local_police, "Police", "100", Colors.blue, context, isDark)),
+              const SizedBox(width: 12),
+              Expanded(child: _buildEmergencyCard(Icons.local_hospital, "Medical", "108", Colors.redAccent, context, isDark)),
+              const SizedBox(width: 12),
+              Expanded(child: _buildEmergencyCard(Icons.fire_truck, "Fire", "101", Colors.orange, context, isDark)),
+            ],
+          ),
+          const SizedBox(height: 32),
 
           Center(
             child: Text(
               "Made with ❤️ by CivicFix",
               style: TextStyle(
-                color: settings.isDarkMode ? Colors.grey[600] : Colors.grey,
-                fontSize: 10,
+                color: isDark ? Colors.grey[600] : Colors.grey[500],
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
               ),
             ),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 16),
         ],
       ),
     );
   }
 
-  BoxDecoration _cardDecoration(SettingsProvider settings) {
-    return BoxDecoration(
-      color: settings.isDarkMode ? Colors.grey[850] : Colors.white,
-      borderRadius: BorderRadius.circular(10),
-      boxShadow: [
-        BoxShadow(
-          color: Colors.black.withOpacity(0.04),
-          blurRadius: 6,
-          offset: const Offset(0, 2),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildStatsShimmer(SettingsProvider settings) {
+  Widget _buildStatsShimmer(bool isDark) {
     return GridView.count(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
       crossAxisCount: 2,
-      mainAxisSpacing: 12,
-      crossAxisSpacing: 12,
-      childAspectRatio: 1.5,
+      mainAxisSpacing: 16,
+      crossAxisSpacing: 16,
+      childAspectRatio: 1.6,
       children: [
-        _buildStatCard("Total", "...", Icons.assignment, Colors.blue, settings),
-        _buildStatCard("Pending", "...", Icons.pending, Colors.orange, settings),
-        _buildStatCard("Progress", "...", Icons.sync, Colors.purple, settings),
-        _buildStatCard("Resolved", "...", Icons.check_circle, Colors.green, settings),
+        _buildStatCard("Total", "-", Icons.analytics, const Color(0xFF4F46E5), isDark),
+        _buildStatCard("Pending", "-", Icons.pending_actions, Colors.orange, isDark),
+        _buildStatCard("In Progress", "-", Icons.sync, Colors.purple, isDark),
+        _buildStatCard("Resolved", "-", Icons.check_circle_outline, Colors.green, isDark),
       ],
     );
   }
 
-  Widget _buildStatCard(String title, String value, IconData icon, Color color, SettingsProvider settings) {
+  Widget _buildStatCard(String title, String value, IconData icon, Color color, bool isDark) {
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.08),
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: color.withOpacity(0.2)),
+        color: isDark ? const Color(0xFF1E293B) : Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          if (!isDark)
+            BoxShadow(
+              color: Colors.grey.withOpacity(0.1),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+        ],
       ),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(icon, color: color, size: 22),
-          const SizedBox(height: 4),
-          Text(
-            value,
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: color,
-            ),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: color.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Icon(icon, color: color, size: 20),
+              ),
+              Text(
+                value,
+                style: TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                  color: isDark ? Colors.white : Colors.black87,
+                ),
+              ),
+            ],
           ),
-          const SizedBox(height: 2),
+          const SizedBox(height: 12),
           Text(
             title,
             style: TextStyle(
-              fontSize: 10,
-              color: settings.isDarkMode ? Colors.grey[400] : Colors.grey.shade600,
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              color: isDark ? Colors.grey[400] : Colors.grey[600],
             ),
           ),
         ],
@@ -801,105 +708,48 @@ class HomeContent extends StatelessWidget {
     );
   }
 
-  Widget _buildActionCard(IconData icon, String label, Color color, VoidCallback onTap, SettingsProvider settings) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 10),
-        decoration: BoxDecoration(
-          color: color.withOpacity(0.08),
-          borderRadius: BorderRadius.circular(10),
-          border: Border.all(color: color.withOpacity(0.2)),
-        ),
-        child: Column(
-          children: [
-            Icon(icon, color: color, size: 24),
-            const SizedBox(height: 4),
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: 11,
-                fontWeight: FontWeight.w500,
-                color: color,
-              ),
+  Widget _buildCategoryCard(IconData icon, String label, Color color, bool isDark) {
+    return Container(
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF1E293B) : Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          if (!isDark)
+            BoxShadow(
+              color: Colors.grey.withOpacity(0.1),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
             ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildCategoryChip(IconData icon, String label, Color color, SettingsProvider settings) {
-    return Chip(
-      avatar: Icon(icon, size: 14, color: color),
-      label: Text(
-        label,
-        style: TextStyle(
-          fontSize: 11,
-          color: settings.isDarkMode ? Colors.white : Colors.grey.shade700,
-        ),
-      ),
-      side: BorderSide(color: color.withOpacity(0.3)),
-      backgroundColor: color.withOpacity(0.08),
-      padding: EdgeInsets.zero,
-      visualDensity: VisualDensity.compact,
-    );
-  }
-
-  Widget _buildRecentComplaintTile(ComplaintModel complaint, SettingsProvider settings) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(6),
-            decoration: BoxDecoration(
-              color: complaint.statusColor.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(6),
-            ),
-            child: Icon(complaint.statusIcon, color: complaint.statusColor, size: 16),
-          ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  complaint.title,
-                  style: TextStyle(
-                    fontWeight: FontWeight.w500,
-                    fontSize: 13,
-                    color: settings.isDarkMode ? Colors.white : Colors.black,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                Text(
-                  '${complaint.createdAt.day}/${complaint.createdAt.month}/${complaint.createdAt.year}',
-                  style: TextStyle(
-                    fontSize: 11,
-                    color: settings.isDarkMode ? Colors.grey[400] : Colors.grey.shade500,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-            decoration: BoxDecoration(
-              color: complaint.statusColor.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Text(
-              complaint.status,
-              style: TextStyle(
-                fontSize: 10,
-                color: complaint.statusColor,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ),
         ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(16),
+          onTap: () {},
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: color.withOpacity(0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(icon, color: color, size: 28),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: isDark ? Colors.grey[300] : Colors.black87,
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -910,36 +760,38 @@ class HomeContent extends StatelessWidget {
     String number,
     Color color,
     BuildContext context,
-    SettingsProvider settings,
+    bool isDark,
   ) {
     return GestureDetector(
       onTap: () {
-        NotificationService().showInfo(context, '📞 $title : $number');
+        NotificationService().showInfo(context, 'Calling $title: $number...');
       },
       child: Container(
-        padding: const EdgeInsets.all(10),
+        padding: const EdgeInsets.symmetric(vertical: 16),
         decoration: BoxDecoration(
-          color: color.withOpacity(0.08),
-          borderRadius: BorderRadius.circular(10),
+          color: color.withOpacity(0.1),
+          borderRadius: BorderRadius.circular(16),
           border: Border.all(color: color.withOpacity(0.2)),
         ),
         child: Column(
           children: [
             Icon(icon, color: color, size: 24),
-            const SizedBox(height: 2),
+            const SizedBox(height: 8),
             Text(
               number,
               style: TextStyle(
-                fontSize: 14,
+                fontSize: 16,
                 fontWeight: FontWeight.bold,
                 color: color,
               ),
             ),
+            const SizedBox(height: 4),
             Text(
               title,
               style: TextStyle(
-                fontSize: 10,
-                color: settings.isDarkMode ? Colors.grey[400] : Colors.grey.shade600,
+                fontSize: 11,
+                fontWeight: FontWeight.w500,
+                color: isDark ? Colors.grey[400] : Colors.grey[700],
               ),
             ),
           ],

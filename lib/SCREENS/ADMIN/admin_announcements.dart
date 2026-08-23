@@ -78,17 +78,19 @@ class _AdminAnnouncementsState extends State<AdminAnnouncements> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: settings.isDarkMode ? Colors.grey[800] : Colors.white,
+        backgroundColor: settings.isDarkMode ? const Color(0xFF1F2937) : Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: Text(
           'Delete Announcement',
           style: TextStyle(
-            color: settings.isDarkMode ? Colors.white : Colors.black,
+            color: settings.isDarkMode ? Colors.white : Colors.black87,
+            fontWeight: FontWeight.bold,
           ),
         ),
         content: Text(
           'Are you sure you want to delete: "$text"?',
           style: TextStyle(
-            color: settings.isDarkMode ? Colors.white : Colors.black,
+            color: settings.isDarkMode ? Colors.grey[300] : Colors.black54,
           ),
         ),
         actions: [
@@ -97,17 +99,22 @@ class _AdminAnnouncementsState extends State<AdminAnnouncements> {
             child: Text(
               'Cancel',
               style: TextStyle(
-                color: settings.isDarkMode ? Colors.white : Colors.black,
+                color: settings.isDarkMode ? Colors.white70 : Colors.black87,
+                fontWeight: FontWeight.w600,
               ),
             ),
           ),
-          TextButton(
+          ElevatedButton(
             onPressed: () {
               Navigator.pop(context);
               _deleteAnnouncement(docId);
             },
-            style: TextButton.styleFrom(foregroundColor: Colors.red),
-            child: const Text('Delete'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFEF4444),
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            ),
+            child: const Text('Delete', style: TextStyle(fontWeight: FontWeight.bold)),
           ),
         ],
       ),
@@ -119,94 +126,141 @@ class _AdminAnnouncementsState extends State<AdminAnnouncements> {
     final settings = Provider.of<SettingsProvider>(context);
 
     return Scaffold(
-      backgroundColor: settings.isDarkMode ? Colors.grey[900] : Colors.grey.shade50,
+      backgroundColor: settings.isDarkMode ? Colors.grey[900] : const Color(0xFFF3F4F6),
       appBar: AppBar(
         title: const Text("Announcements"),
         centerTitle: true,
         elevation: 0,
         backgroundColor: settings.isDarkMode ? Colors.grey[900] : Colors.white,
-        foregroundColor: settings.isDarkMode ? Colors.white : Colors.blue.shade700,
+        foregroundColor: settings.isDarkMode ? Colors.white : Colors.black87,
       ),
       body: Padding(
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Input Field
-            TextField(
-              controller: announcementController,
-              style: TextStyle(
-                color: settings.isDarkMode ? Colors.white : Colors.black,
-              ),
-              decoration: InputDecoration(
-                hintText: "Enter Announcement",
-                hintStyle: TextStyle(
-                  color: settings.isDarkMode ? Colors.grey[500] : Colors.grey[400],
-                ),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                prefixIcon: Icon(
-                  Icons.campaign,
-                  color: settings.isDarkMode ? Colors.grey[400] : Colors.grey[600],
-                ),
-                filled: true,
-                fillColor: settings.isDarkMode ? Colors.grey[800] : Colors.grey.shade50,
-                labelStyle: TextStyle(
-                  color: settings.isDarkMode ? Colors.grey[400] : Colors.grey[600],
-                ),
-                suffixIcon: _isLoading
-                    ? const SizedBox(
-                        height: 20,
-                        width: 20,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                        ),
-                      )
-                    : null,
-              ),
-              enabled: !_isLoading,
-            ),
-
-            const SizedBox(height: 16),
-
-            // Add Button
-            SizedBox(
-              width: double.infinity,
-              height: 50,
-              child: ElevatedButton.icon(
-                onPressed: _isLoading ? null : _addAnnouncement,
-                icon: const Icon(Icons.add),
-                label: const Text(
-                  "Add Announcement",
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-                ),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.blue,
-                  foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
+            // 1. Input Card
+            Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: settings.isDarkMode ? const Color(0xFF1F2937) : Colors.white,
+                borderRadius: BorderRadius.circular(20),
+                boxShadow: [
+                  BoxShadow(
+                    color: settings.isDarkMode ? Colors.black.withOpacity(0.3) : Colors.black.withOpacity(0.04),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
                   ),
-                ),
+                ],
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    "New Announcement",
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                      color: settings.isDarkMode ? Colors.white : Colors.black87,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: announcementController,
+                    style: TextStyle(
+                      color: settings.isDarkMode ? Colors.white : Colors.black87,
+                    ),
+                    maxLines: 2,
+                    minLines: 1,
+                    decoration: InputDecoration(
+                      hintText: "What do citizens need to know?",
+                      hintStyle: TextStyle(
+                        color: settings.isDarkMode ? Colors.grey[500] : Colors.grey[400],
+                      ),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(16),
+                        borderSide: BorderSide.none,
+                      ),
+                      prefixIcon: Padding(
+                        padding: const EdgeInsets.all(12),
+                        child: Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF4F46E5).withOpacity(0.1),
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(
+                            Icons.campaign_rounded,
+                            color: Color(0xFF4F46E5),
+                            size: 20,
+                          ),
+                        ),
+                      ),
+                      filled: true,
+                      fillColor: settings.isDarkMode ? Colors.grey[800] : const Color(0xFFF9FAFB),
+                      suffixIcon: _isLoading
+                          ? const Padding(
+                              padding: EdgeInsets.all(16),
+                              child: SizedBox(
+                                height: 20,
+                                width: 20,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
+                              ),
+                            )
+                          : null,
+                    ),
+                    enabled: !_isLoading,
+                  ),
+                  const SizedBox(height: 16),
+                  SizedBox(
+                    width: double.infinity,
+                    height: 54,
+                    child: ElevatedButton.icon(
+                      onPressed: _isLoading ? null : _addAnnouncement,
+                      icon: const Icon(Icons.add_circle_outline_rounded),
+                      label: const Text(
+                        "Add Announcement",
+                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF4F46E5),
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        elevation: 0,
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
+            const SizedBox(height: 24),
 
-            const SizedBox(height: 25),
-
-            // Announcements List - Live Data
+            // Live Announcements Header
             Row(
               children: [
-                Icon(
-                  Icons.list_alt,
-                  color: settings.isDarkMode ? Colors.white : Colors.blue,
-                  size: 22,
+                Container(
+                  padding: const EdgeInsets.all(6),
+                  decoration: BoxDecoration(
+                    color: settings.isDarkMode ? Colors.grey[800] : Colors.white,
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    Icons.history_rounded,
+                    color: settings.isDarkMode ? Colors.white : const Color(0xFF4F46E5),
+                    size: 20,
+                  ),
                 ),
-                const SizedBox(width: 10),
+                const SizedBox(width: 8),
                 Text(
-                  "Previous Announcements",
+                  "Recent Announcements",
                   style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: settings.isDarkMode ? Colors.white : Colors.black,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                    color: settings.isDarkMode ? Colors.white : Colors.black87,
                   ),
                 ),
                 const Spacer(),
@@ -214,11 +268,19 @@ class _AdminAnnouncementsState extends State<AdminAnnouncements> {
                   stream: _firestoreService.getAnnouncements(),
                   builder: (context, snapshot) {
                     if (snapshot.hasData) {
-                      return Text(
-                        '${snapshot.data!.length} items',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: settings.isDarkMode ? Colors.grey[400] : Colors.grey.shade500,
+                      return Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF4F46E5).withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Text(
+                          '${snapshot.data!.length} Live',
+                          style: const TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xFF4F46E5),
+                          ),
                         ),
                       );
                     }
@@ -227,10 +289,9 @@ class _AdminAnnouncementsState extends State<AdminAnnouncements> {
                 ),
               ],
             ),
+            const SizedBox(height: 12),
 
-            const SizedBox(height: 15),
-
-            // Announcements List
+            // 2. Live Announcements Stream List
             Expanded(
               child: StreamBuilder<List<AnnouncementModel>>(
                 stream: _firestoreService.getAnnouncements(),
@@ -244,18 +305,11 @@ class _AdminAnnouncementsState extends State<AdminAnnouncements> {
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          const Icon(Icons.error_outline, size: 60, color: Colors.red),
+                          const Icon(Icons.error_outline_rounded, size: 60, color: Color(0xFFEF4444)),
                           const SizedBox(height: 16),
                           Text(
                             'Error: ${snapshot.error}',
-                            style: const TextStyle(color: Colors.red),
-                          ),
-                          const SizedBox(height: 16),
-                          ElevatedButton(
-                            onPressed: () {
-                              setState(() {});
-                            },
-                            child: const Text('Retry'),
+                            style: const TextStyle(color: Color(0xFFEF4444)),
                           ),
                         ],
                       ),
@@ -264,7 +318,7 @@ class _AdminAnnouncementsState extends State<AdminAnnouncements> {
 
                   if (!snapshot.hasData || snapshot.data!.isEmpty) {
                     return EmptyStateWidget(
-                      icon: Icons.notifications_off,
+                      icon: Icons.notifications_off_rounded,
                       title: 'No announcements yet',
                       subtitle: 'Add your first announcement',
                     );
@@ -272,52 +326,109 @@ class _AdminAnnouncementsState extends State<AdminAnnouncements> {
 
                   final announcements = snapshot.data!;
                   return ListView.builder(
+                    physics: const BouncingScrollPhysics(),
                     itemCount: announcements.length,
                     itemBuilder: (context, index) {
                       final announcement = announcements[index];
-                      return Card(
-                        color: settings.isDarkMode ? Colors.grey[850] : Colors.white,
-                        elevation: 2,
+                      return Container(
+                        key: ValueKey(announcement.id),
                         margin: const EdgeInsets.only(bottom: 12),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
+                        decoration: BoxDecoration(
+                          color: settings.isDarkMode ? const Color(0xFF1F2937) : Colors.white,
+                          borderRadius: BorderRadius.circular(16),
+                          boxShadow: [
+                            BoxShadow(
+                              color: settings.isDarkMode ? Colors.black26 : Colors.black.withOpacity(0.03),
+                              blurRadius: 8,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
                         ),
-                        child: ListTile(
-                          leading: Container(
-                            padding: const EdgeInsets.all(8),
-                            decoration: BoxDecoration(
-                              color: settings.isDarkMode ? Colors.grey[700] : Colors.blue.shade50,
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                            child: Icon(
-                              Icons.campaign,
-                              color: settings.isDarkMode ? Colors.white : Colors.blue,
-                              size: 20,
-                            ),
-                          ),
-                          title: Text(
-                            announcement.text,
-                            style: TextStyle(
-                              fontWeight: FontWeight.w500,
-                              fontSize: 15,
-                              color: settings.isDarkMode ? Colors.white : Colors.black,
-                            ),
-                          ),
-                          subtitle: Text(
-                            announcement.formattedDate,
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: settings.isDarkMode ? Colors.grey[400] : Colors.grey.shade500,
-                            ),
-                          ),
-                          trailing: IconButton(
-                            icon: const Icon(
-                              Icons.delete_outline,
-                              color: Colors.red,
-                            ),
-                            onPressed: () {
-                              _confirmDelete(announcement.id, announcement.text);
-                            },
+                        child: IntrinsicHeight(
+                          child: Row(
+                            children: [
+                              // Gradient callout line
+                              Container(
+                                width: 6,
+                                decoration: const BoxDecoration(
+                                  gradient: LinearGradient(
+                                    colors: [Color(0xFF4F46E5), Color(0xFF7C3AED)],
+                                    begin: Alignment.topCenter,
+                                    end: Alignment.bottomCenter,
+                                  ),
+                                  borderRadius: BorderRadius.only(
+                                    topLeft: Radius.circular(16),
+                                    bottomLeft: Radius.circular(16),
+                                  ),
+                                ),
+                              ),
+                              Expanded(
+                                child: Padding(
+                                  padding: const EdgeInsets.all(16),
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Row(
+                                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                        children: [
+                                          Container(
+                                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                            decoration: BoxDecoration(
+                                              color: settings.isDarkMode ? Colors.grey[800] : const Color(0xFFF3F4F6),
+                                              borderRadius: BorderRadius.circular(8),
+                                            ),
+                                            child: Row(
+                                              children: [
+                                                Icon(
+                                                  Icons.access_time_rounded,
+                                                  size: 14,
+                                                  color: settings.isDarkMode ? Colors.grey[400] : Colors.grey[600],
+                                                ),
+                                                const SizedBox(width: 4),
+                                                Text(
+                                                  announcement.formattedDate,
+                                                  style: TextStyle(
+                                                    fontSize: 11,
+                                                    fontWeight: FontWeight.w600,
+                                                    color: settings.isDarkMode ? Colors.grey[300] : Colors.grey[700],
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                          InkWell(
+                                            onTap: () => _confirmDelete(announcement.id, announcement.text),
+                                            borderRadius: BorderRadius.circular(20),
+                                            child: Container(
+                                              padding: const EdgeInsets.all(6),
+                                              decoration: BoxDecoration(
+                                                color: const Color(0xFFEF4444).withOpacity(0.1),
+                                                shape: BoxShape.circle,
+                                              ),
+                                              child: const Icon(
+                                                Icons.delete_outline_rounded,
+                                                color: Color(0xFFEF4444),
+                                                size: 18,
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                      const SizedBox(height: 12),
+                                      Text(
+                                        announcement.text,
+                                        style: TextStyle(
+                                          fontWeight: FontWeight.w500,
+                                          fontSize: 15,
+                                          height: 1.4,
+                                          color: settings.isDarkMode ? Colors.white : Colors.black87,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                       );

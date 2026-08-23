@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import '../models/complaint_model.dart';
 import '../models/announcement_model.dart';
 import '../models/user_model.dart';
+import '../models/notification_model.dart'; // Import our new model
 
 class FirestoreService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
@@ -61,14 +62,17 @@ class FirestoreService {
     return _firestore
         .collection('complaints')
         .where('userId', isEqualTo: userId)
-        .orderBy('createdAt', descending: true)
         .snapshots()
-        .map((snapshot) => snapshot.docs
-            .map((doc) => ComplaintModel.fromMap(
-                  doc.data() as Map<String, dynamic>,
-                  doc.id,
-                ))
-            .toList());
+        .map((snapshot) {
+      final list = snapshot.docs
+          .map((doc) => ComplaintModel.fromMap(
+                doc.data(),
+                doc.id,
+              ))
+          .toList();
+      list.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+      return list;
+    });
   }
 
   // Get all complaints (Stream)
@@ -79,7 +83,7 @@ class FirestoreService {
         .snapshots()
         .map((snapshot) => snapshot.docs
             .map((doc) => ComplaintModel.fromMap(
-                  doc.data() as Map<String, dynamic>,
+                  doc.data(),
                   doc.id,
                 ))
             .toList());
@@ -93,21 +97,30 @@ class FirestoreService {
     return _firestore
         .collection('complaints')
         .where('status', isEqualTo: status)
-        .orderBy('createdAt', descending: true)
         .snapshots()
-        .map((snapshot) => snapshot.docs
-            .map((doc) => ComplaintModel.fromMap(
-                  doc.data() as Map<String, dynamic>,
-                  doc.id,
-                ))
-            .toList());
+        .map((snapshot) {
+      final list = snapshot.docs
+          .map((doc) => ComplaintModel.fromMap(
+                doc.data(),
+                doc.id,
+              ))
+          .toList();
+      list.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+      return list;
+    });
   }
 
-  // Update complaint status
-  Future<void> updateComplaintStatus(String docId, String status) async {
+  // Update complaint status (with optional admin remark)
+  Future<void> updateComplaintStatus(
+    String docId,
+    String status, {
+    String? adminRemark, // Optional comment from admin
+  }) async {
     await _firestore.collection('complaints').doc(docId).update({
       'status': status,
       'updatedAt': Timestamp.now(),
+      if (adminRemark != null && adminRemark.isNotEmpty)
+        'adminRemark': adminRemark, // Only save if remark is not empty
     });
   }
 
@@ -177,7 +190,7 @@ class FirestoreService {
         .snapshots()
         .map((snapshot) => snapshot.docs
             .map((doc) => AnnouncementModel.fromMap(
-                  doc.data() as Map<String, dynamic>,
+                  doc.data(),
                   doc.id,
                 ))
             .toList());
@@ -193,18 +206,80 @@ class FirestoreService {
   // Search complaints by title
   Stream<List<ComplaintModel>> searchComplaints(String query) {
     // Note: Firestore doesn't support full-text search natively
-    // This is a simple search by title (exact match)
+    // This is a simple search by title (case-insensitive)
     return _firestore
         .collection('complaints')
         .orderBy('createdAt', descending: true)
         .snapshots()
         .map((snapshot) => snapshot.docs
             .map((doc) => ComplaintModel.fromMap(
-                  doc.data() as Map<String, dynamic>,
+                  doc.data(),
                   doc.id,
                 ))
             .where((complaint) =>
                 complaint.title.toLowerCase().contains(query.toLowerCase()))
             .toList());
+  }
+
+  // ========== NOTIFICATION OPERATIONS ==========
+
+  // Add a new notification for a user
+  // This is called by admin when they update a complaint status
+  Future<void> addNotification(NotificationModel notification) async {
+    await _firestore.collection('notifications').add(notification.toMap());
+  }
+
+  // Get all notifications for a specific user (Stream - real-time updates)
+  // This is used with StreamBuilder to show live notification updates
+  Stream<List<NotificationModel>> getUserNotifications(String userId) {
+    return _firestore
+        .collection('notifications')
+        .where('userId', isEqualTo: userId) // Only get THIS user's notifications
+        .snapshots() // This gives us a real-time stream!
+        .map((snapshot) {
+      final list = snapshot.docs
+          .map((doc) => NotificationModel.fromMap(
+                doc.data(),
+                doc.id,
+              ))
+          .toList();
+      list.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+      return list;
+    });
+  }
+
+  // Get count of UNREAD notifications (used for the badge on the bell icon)
+  Stream<int> getUnreadNotificationCount(String userId) {
+    return _firestore
+        .collection('notifications')
+        .where('userId', isEqualTo: userId)
+        .snapshots()
+        .map((snapshot) => snapshot.docs
+            .where((doc) => doc.data()['isRead'] == false)
+            .length); // Return count of unread notifications
+  }
+
+  // Mark a single notification as read
+  Future<void> markNotificationRead(String notificationId) async {
+    await _firestore
+        .collection('notifications')
+        .doc(notificationId)
+        .update({'isRead': true});
+  }
+
+  // Mark ALL notifications as read for a user
+  Future<void> markAllNotificationsRead(String userId) async {
+    // Get all notifications for this user
+    final querySnapshot = await _firestore
+        .collection('notifications')
+        .where('userId', isEqualTo: userId)
+        .get();
+
+    // Update each unread one to isRead: true
+    for (var doc in querySnapshot.docs) {
+      if (doc.data()['isRead'] == false) {
+        await doc.reference.update({'isRead': true});
+      }
+    }
   }
 }

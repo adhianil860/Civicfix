@@ -260,8 +260,6 @@ class _UserProfileState extends State<UserProfile> {
 }
 
   void _showSettingsPopup() {
-    final settings = Provider.of<SettingsProvider>(context, listen: false);
-
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,

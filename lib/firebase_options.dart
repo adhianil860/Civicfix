@@ -41,46 +41,48 @@ class DefaultFirebaseOptions {
   }
 
   static const FirebaseOptions web = FirebaseOptions(
-    apiKey: 'AIzaSyC_XI1km4SpPfajoQgHFq5Xm0GtVxPIwtU',
-    appId: '1:951988090266:web:b51d45df6f002bb2d23623',
-    messagingSenderId: '951988090266',
-    projectId: 'civic-fix-82a79',
-    authDomain: 'civic-fix-82a79.firebaseapp.com',
-    storageBucket: 'civic-fix-82a79.firebasestorage.app',
+    apiKey: 'AIzaSyCssF5L66VInTLvdnZ-V3MOcOQkQVRNkm0',
+    appId: '1:810969059115:web:6bad2652df99232dd93f6e',
+    messagingSenderId: '810969059115',
+    projectId: 'civic-2cf5a',
+    authDomain: 'civic-2cf5a.firebaseapp.com',
+    storageBucket: 'civic-2cf5a.firebasestorage.app',
+    measurementId: 'G-028ZLG1CJ7',
   );
 
   static const FirebaseOptions android = FirebaseOptions(
-    apiKey: 'AIzaSyB0SboA954z56uaTfXterTRACTbOqklKxI',
-    appId: '1:951988090266:android:88619fcbc732268ad23623',
-    messagingSenderId: '951988090266',
-    projectId: 'civic-fix-82a79',
-    storageBucket: 'civic-fix-82a79.firebasestorage.app',
+    apiKey: 'AIzaSyCs1vs-aJ9Ze9VlVIRS4wnxS5hEiNNuFd8',
+    appId: '1:810969059115:android:fc8e8159b2fa1c9bd93f6e',
+    messagingSenderId: '810969059115',
+    projectId: 'civic-2cf5a',
+    storageBucket: 'civic-2cf5a.firebasestorage.app',
   );
 
   static const FirebaseOptions ios = FirebaseOptions(
-    apiKey: 'AIzaSyCmL06tVKOt7Pciep4VG5E1tpe0Ab_gf5w',
-    appId: '1:951988090266:ios:7c2d1157913870fbd23623',
-    messagingSenderId: '951988090266',
-    projectId: 'civic-fix-82a79',
-    storageBucket: 'civic-fix-82a79.firebasestorage.app',
+    apiKey: 'AIzaSyBQcdqm7JMAzOE29g3nD2_Hx67U-S6XZk4',
+    appId: '1:810969059115:ios:38ed232177b056edd93f6e',
+    messagingSenderId: '810969059115',
+    projectId: 'civic-2cf5a',
+    storageBucket: 'civic-2cf5a.firebasestorage.app',
     iosBundleId: 'com.example.civicfic',
   );
 
   static const FirebaseOptions macos = FirebaseOptions(
-    apiKey: 'AIzaSyCmL06tVKOt7Pciep4VG5E1tpe0Ab_gf5w',
-    appId: '1:951988090266:ios:7c2d1157913870fbd23623',
-    messagingSenderId: '951988090266',
-    projectId: 'civic-fix-82a79',
-    storageBucket: 'civic-fix-82a79.firebasestorage.app',
+    apiKey: 'AIzaSyBQcdqm7JMAzOE29g3nD2_Hx67U-S6XZk4',
+    appId: '1:810969059115:ios:38ed232177b056edd93f6e',
+    messagingSenderId: '810969059115',
+    projectId: 'civic-2cf5a',
+    storageBucket: 'civic-2cf5a.firebasestorage.app',
     iosBundleId: 'com.example.civicfic',
   );
 
   static const FirebaseOptions windows = FirebaseOptions(
-    apiKey: 'AIzaSyC_XI1km4SpPfajoQgHFq5Xm0GtVxPIwtU',
-    appId: '1:951988090266:web:80a40d43cd45bf46d23623',
-    messagingSenderId: '951988090266',
-    projectId: 'civic-fix-82a79',
-    authDomain: 'civic-fix-82a79.firebaseapp.com',
-    storageBucket: 'civic-fix-82a79.firebasestorage.app',
+    apiKey: 'AIzaSyCssF5L66VInTLvdnZ-V3MOcOQkQVRNkm0',
+    appId: '1:810969059115:web:c050f0e017b8d67ed93f6e',
+    messagingSenderId: '810969059115',
+    projectId: 'civic-2cf5a',
+    authDomain: 'civic-2cf5a.firebaseapp.com',
+    storageBucket: 'civic-2cf5a.firebasestorage.app',
+    measurementId: 'G-1GWCWF875G',
   );
 }

@@ -29,7 +29,6 @@ class _UserComplaintregistrationState extends State<UserComplaintregistration> {
   String? selectedCategory;
   String? selectedPriority;
 
-  // 👇 Location variables
   double? selectedLatitude;
   double? selectedLongitude;
 
@@ -81,7 +80,6 @@ class _UserComplaintregistrationState extends State<UserComplaintregistration> {
     NotificationService().showInfo(context, 'Image uploaded successfully!');
   }
 
-  // ========== PICK LOCATION FROM MAP ==========
   Future<void> _pickLocationFromMap() async {
     try {
       final result = await Navigator.push<MapPickerResult>(
@@ -116,10 +114,7 @@ class _UserComplaintregistrationState extends State<UserComplaintregistration> {
     }
   }
 
-  // ========== GET ADDRESS FROM COORDINATES ==========
-  // ✅ Fixed - No geocoding dependency
   Future<String> _getAddressFromCoordinates(double lat, double lng) async {
-    // Return coordinates as location
     return '📍 ${lat.toStringAsFixed(6)}, ${lng.toStringAsFixed(6)}';
   }
 
@@ -228,103 +223,138 @@ class _UserComplaintregistrationState extends State<UserComplaintregistration> {
     }
   }
 
+  InputDecoration _buildInputDecoration(String hint, IconData icon, SettingsProvider settings) {
+    return InputDecoration(
+      hintText: hint,
+      hintStyle: TextStyle(
+        color: settings.isDarkMode ? Colors.grey[500] : Colors.grey[400],
+      ),
+      prefixIcon: Padding(
+        padding: const EdgeInsets.all(8.0),
+        child: Container(
+          decoration: BoxDecoration(
+            color: const Color(0xFF4F46E5).withOpacity(0.1),
+            shape: BoxShape.circle,
+          ),
+          child: Icon(
+            icon,
+            size: 20,
+            color: const Color(0xFF4F46E5),
+          ),
+        ),
+      ),
+      filled: true,
+      fillColor: settings.isDarkMode ? const Color(0xFF1E293B) : const Color(0xFFF8FAFC),
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(16),
+        borderSide: BorderSide.none,
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(16),
+        borderSide: BorderSide.none,
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(16),
+        borderSide: const BorderSide(color: Color(0xFF4F46E5), width: 1.5),
+      ),
+      contentPadding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final settings = Provider.of<SettingsProvider>(context);
-    final border = OutlineInputBorder(borderRadius: BorderRadius.circular(12));
 
-    return Container(
-      color: settings.isDarkMode ? Colors.grey[900] : Colors.white,
-      child: SafeArea(
+    return Scaffold(
+      backgroundColor: settings.isDarkMode ? const Color(0xFF0F172A) : Colors.white,
+      body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(20),
+          physics: const BouncingScrollPhysics(),
+          padding: const EdgeInsets.all(24),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Center(
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  decoration: BoxDecoration(
-                    gradient: const LinearGradient(
-                      colors: [Colors.blue, Colors.purple],
-                    ),
-                    borderRadius: BorderRadius.circular(20),
+              // Header Banner
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFF4F46E5), Color(0xFF3B82F6)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
                   ),
-                  child: const Text(
-                    "📝 Register Complaint",
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
+                  borderRadius: BorderRadius.circular(20),
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xFF4F46E5).withOpacity(0.3),
+                      blurRadius: 15,
+                      offset: const Offset(0, 5),
                     ),
-                  ),
+                  ],
+                ),
+                child: const Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Icon(Icons.edit_document, color: Colors.white, size: 32),
+                    SizedBox(height: 12),
+                    Text(
+                      "Register a Complaint",
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 22,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    SizedBox(height: 4),
+                    Text(
+                      "Help us improve your community.",
+                      style: TextStyle(
+                        color: Colors.white70,
+                        fontSize: 14,
+                      ),
+                    ),
+                  ],
                 ),
               ),
-              const SizedBox(height: 25),
+              const SizedBox(height: 32),
 
+              // Title Field
               Text(
-                "Complaint Title",
+                "Title",
                 style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 16,
-                  color: settings.isDarkMode ? Colors.white : Colors.black,
+                  fontWeight: FontWeight.w600,
+                  fontSize: 15,
+                  color: settings.isDarkMode ? Colors.white : Colors.black87,
                 ),
               ),
               const SizedBox(height: 8),
               TextField(
                 controller: titleController,
-                style: TextStyle(
-                  color: settings.isDarkMode ? Colors.white : Colors.black,
-                ),
-                decoration: InputDecoration(
-                  hintText: "Enter complaint title",
-                  hintStyle: TextStyle(
-                    color: settings.isDarkMode ? Colors.grey[500] : Colors.grey[400],
-                  ),
-                  border: border,
-                  prefixIcon: Icon(
-                    Icons.title,
-                    color: settings.isDarkMode ? Colors.grey[400] : Colors.grey[600],
-                  ),
-                  filled: true,
-                  fillColor: settings.isDarkMode ? Colors.grey[800] : Colors.grey.shade50,
-                ),
+                style: TextStyle(color: settings.isDarkMode ? Colors.white : Colors.black),
+                decoration: _buildInputDecoration("E.g., Pothole on Main St.", Icons.title, settings),
               ),
-
               const SizedBox(height: 20),
 
+              // Description Field
               Text(
-                "Complaint Description",
+                "Description",
                 style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 16,
-                  color: settings.isDarkMode ? Colors.white : Colors.black,
+                  fontWeight: FontWeight.w600,
+                  fontSize: 15,
+                  color: settings.isDarkMode ? Colors.white : Colors.black87,
                 ),
               ),
               const SizedBox(height: 8),
               TextField(
                 controller: descriptionController,
-                maxLines: 5,
-                style: TextStyle(
-                  color: settings.isDarkMode ? Colors.white : Colors.black,
-                ),
-                decoration: InputDecoration(
-                  hintText: "Describe your complaint",
-                  hintStyle: TextStyle(
-                    color: settings.isDarkMode ? Colors.grey[500] : Colors.grey[400],
-                  ),
-                  border: border,
-                  prefixIcon: Icon(
-                    Icons.description,
-                    color: settings.isDarkMode ? Colors.grey[400] : Colors.grey[600],
-                  ),
-                  filled: true,
-                  fillColor: settings.isDarkMode ? Colors.grey[800] : Colors.grey.shade50,
-                ),
+                maxLines: 4,
+                style: TextStyle(color: settings.isDarkMode ? Colors.white : Colors.black),
+                decoration: _buildInputDecoration("Describe the issue in detail", Icons.description, settings),
               ),
-
               const SizedBox(height: 20),
 
+              // Category & Priority
               Row(
                 children: [
                   Expanded(
@@ -334,54 +364,30 @@ class _UserComplaintregistrationState extends State<UserComplaintregistration> {
                         Text(
                           "Category",
                           style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 16,
-                            color: settings.isDarkMode ? Colors.white : Colors.black,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 15,
+                            color: settings.isDarkMode ? Colors.white : Colors.black87,
                           ),
                         ),
                         const SizedBox(height: 8),
                         DropdownButtonFormField<String>(
                           value: selectedCategory,
-                          dropdownColor: settings.isDarkMode ? Colors.grey[800] : Colors.white,
-                          style: TextStyle(
-                            color: settings.isDarkMode ? Colors.white : Colors.black,
-                          ),
-                          decoration: InputDecoration(
-                            border: border,
-                            prefixIcon: Icon(
-                              Icons.category,
-                              color: settings.isDarkMode ? Colors.grey[400] : Colors.grey[600],
-                            ),
-                            filled: true,
-                            fillColor: settings.isDarkMode ? Colors.grey[800] : Colors.grey.shade50,
-                          ),
-                          hint: Text(
-                            "Select",
-                            style: TextStyle(
-                              color: settings.isDarkMode ? Colors.grey[500] : Colors.grey[400],
-                            ),
-                          ),
+                          dropdownColor: settings.isDarkMode ? const Color(0xFF1E293B) : Colors.white,
+                          style: TextStyle(color: settings.isDarkMode ? Colors.white : Colors.black),
+                          icon: const Icon(Icons.keyboard_arrow_down, color: Color(0xFF4F46E5)),
+                          decoration: _buildInputDecoration("Select", Icons.category, settings),
                           items: categories.map((category) {
                             return DropdownMenuItem(
                               value: category,
-                              child: Text(
-                                category,
-                                style: TextStyle(
-                                  color: settings.isDarkMode ? Colors.white : Colors.black,
-                                ),
-                              ),
+                              child: Text(category),
                             );
                           }).toList(),
-                          onChanged: (value) {
-                            setState(() {
-                              selectedCategory = value;
-                            });
-                          },
+                          onChanged: (value) => setState(() => selectedCategory = value),
                         ),
                       ],
                     ),
                   ),
-                  const SizedBox(width: 12),
+                  const SizedBox(width: 16),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -389,64 +395,40 @@ class _UserComplaintregistrationState extends State<UserComplaintregistration> {
                         Text(
                           "Priority",
                           style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 16,
-                            color: settings.isDarkMode ? Colors.white : Colors.black,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 15,
+                            color: settings.isDarkMode ? Colors.white : Colors.black87,
                           ),
                         ),
                         const SizedBox(height: 8),
                         DropdownButtonFormField<String>(
                           value: selectedPriority,
-                          dropdownColor: settings.isDarkMode ? Colors.grey[800] : Colors.white,
-                          style: TextStyle(
-                            color: settings.isDarkMode ? Colors.white : Colors.black,
-                          ),
-                          decoration: InputDecoration(
-                            border: border,
-                            prefixIcon: Icon(
-                              Icons.priority_high,
-                              color: settings.isDarkMode ? Colors.grey[400] : Colors.grey[600],
-                            ),
-                            filled: true,
-                            fillColor: settings.isDarkMode ? Colors.grey[800] : Colors.grey.shade50,
-                          ),
-                          hint: Text(
-                            "Select",
-                            style: TextStyle(
-                              color: settings.isDarkMode ? Colors.grey[500] : Colors.grey[400],
-                            ),
-                          ),
+                          dropdownColor: settings.isDarkMode ? const Color(0xFF1E293B) : Colors.white,
+                          style: TextStyle(color: settings.isDarkMode ? Colors.white : Colors.black),
+                          icon: const Icon(Icons.keyboard_arrow_down, color: Color(0xFF4F46E5)),
+                          decoration: _buildInputDecoration("Select", Icons.priority_high, settings),
                           items: priorities.map((priority) {
                             return DropdownMenuItem(
                               value: priority,
-                              child: Text(
-                                priority,
-                                style: TextStyle(
-                                  color: settings.isDarkMode ? Colors.white : Colors.black,
-                                ),
-                              ),
+                              child: Text(priority),
                             );
                           }).toList(),
-                          onChanged: (value) {
-                            setState(() {
-                              selectedPriority = value;
-                            });
-                          },
+                          onChanged: (value) => setState(() => selectedPriority = value),
                         ),
                       ],
                     ),
                   ),
                 ],
               ),
-
               const SizedBox(height: 20),
 
+              // Location Field
               Text(
                 "Location",
                 style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 16,
-                  color: settings.isDarkMode ? Colors.white : Colors.black,
+                  fontWeight: FontWeight.w600,
+                  fontSize: 15,
+                  color: settings.isDarkMode ? Colors.white : Colors.black87,
                 ),
               ),
               const SizedBox(height: 8),
@@ -456,74 +438,53 @@ class _UserComplaintregistrationState extends State<UserComplaintregistration> {
                     child: TextField(
                       controller: locationController,
                       readOnly: true,
-                      style: TextStyle(
-                        color: settings.isDarkMode ? Colors.white : Colors.black,
-                      ),
-                      decoration: InputDecoration(
-                        hintText: "Tap 📍 to select location",
-                        hintStyle: TextStyle(
-                          color: settings.isDarkMode ? Colors.grey[500] : Colors.grey[400],
-                        ),
-                        border: border,
-                        prefixIcon: Icon(
-                          Icons.location_on,
-                          color: settings.isDarkMode ? Colors.grey[400] : Colors.grey[600],
-                        ),
-                        filled: true,
-                        fillColor: settings.isDarkMode ? Colors.grey[800] : Colors.grey.shade50,
-                      ),
+                      style: TextStyle(color: settings.isDarkMode ? Colors.white : Colors.black),
+                      decoration: _buildInputDecoration("Tap map button to select", Icons.location_on, settings),
                     ),
                   ),
-                  const SizedBox(width: 8),
-                  Container(
-                    decoration: BoxDecoration(
-                      gradient: const LinearGradient(
-                        colors: [Colors.blue, Colors.purple],
-                      ),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Material(
-                      color: Colors.transparent,
-                      child: InkWell(
-                        onTap: _pickLocationFromMap,
-                        borderRadius: BorderRadius.circular(12),
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 16,
+                  const SizedBox(width: 12),
+                  GestureDetector(
+                    onTap: _pickLocationFromMap,
+                    child: Container(
+                      height: 56,
+                      width: 56,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF4F46E5),
+                        borderRadius: BorderRadius.circular(16),
+                        boxShadow: [
+                          BoxShadow(
+                            color: const Color(0xFF4F46E5).withOpacity(0.3),
+                            blurRadius: 8,
+                            offset: const Offset(0, 4),
                           ),
-                          child: const Icon(
-                            Icons.map,
-                            color: Colors.white,
-                            size: 24,
-                          ),
-                        ),
+                        ],
                       ),
+                      child: const Icon(Icons.map, color: Colors.white, size: 28),
                     ),
                   ),
                 ],
               ),
-
               if (selectedLatitude != null && selectedLongitude != null)
                 Padding(
-                  padding: const EdgeInsets.only(top: 8),
+                  padding: const EdgeInsets.only(top: 12),
                   child: Container(
-                    padding: const EdgeInsets.all(10),
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                     decoration: BoxDecoration(
                       color: Colors.green.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(10),
+                      borderRadius: BorderRadius.circular(12),
                       border: Border.all(color: Colors.green.withOpacity(0.3)),
                     ),
                     child: Row(
                       children: [
-                        const Icon(Icons.check_circle, color: Colors.green, size: 16),
+                        const Icon(Icons.check_circle, color: Colors.green, size: 18),
                         const SizedBox(width: 8),
                         Expanded(
                           child: Text(
-                            '📍 ${selectedLatitude!.toStringAsFixed(6)}, ${selectedLongitude!.toStringAsFixed(6)}',
+                            '📍 ${selectedLatitude!.toStringAsFixed(5)}, ${selectedLongitude!.toStringAsFixed(5)}',
                             style: TextStyle(
-                              fontSize: 12,
-                              color: settings.isDarkMode ? Colors.white : Colors.black,
+                              fontSize: 13,
+                              fontWeight: FontWeight.w500,
+                              color: settings.isDarkMode ? Colors.white : Colors.black87,
                             ),
                           ),
                         ),
@@ -531,52 +492,61 @@ class _UserComplaintregistrationState extends State<UserComplaintregistration> {
                     ),
                   ),
                 ),
-
               const SizedBox(height: 20),
 
+              // Image Upload
               Text(
                 "Upload Image",
                 style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 16,
-                  color: settings.isDarkMode ? Colors.white : Colors.black,
+                  fontWeight: FontWeight.w600,
+                  fontSize: 15,
+                  color: settings.isDarkMode ? Colors.white : Colors.black87,
                 ),
               ),
               const SizedBox(height: 8),
-              SizedBox(
-                width: double.infinity,
-                height: 55,
-                child: OutlinedButton.icon(
-                  onPressed: pickImage,
-                  icon: Icon(
-                    Icons.image,
-                    color: settings.isDarkMode ? Colors.grey[400] : Colors.blue.shade300,
-                  ),
-                  label: Text(
-                    selectedImage != null ? "Change Image" : "Upload Image",
-                    style: TextStyle(
-                      fontSize: 16,
-                      color: settings.isDarkMode ? Colors.grey[400] : Colors.black,
+              if (selectedImage == null)
+                GestureDetector(
+                  onTap: pickImage,
+                  child: Container(
+                    height: 120,
+                    width: double.infinity,
+                    decoration: BoxDecoration(
+                      color: settings.isDarkMode ? const Color(0xFF1E293B) : const Color(0xFFF8FAFC),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: const Color(0xFF4F46E5).withOpacity(0.5),
+                        width: 1.5,
+                        style: BorderStyle.solid,
+                      ),
+                    ),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF4F46E5).withOpacity(0.1),
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(Icons.add_a_photo, color: Color(0xFF4F46E5), size: 28),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          "Tap to upload a photo",
+                          style: TextStyle(
+                            color: settings.isDarkMode ? Colors.grey[400] : Colors.grey[600],
+                            fontSize: 14,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                  style: OutlinedButton.styleFrom(
-                    side: BorderSide(
-                      color: settings.isDarkMode ? Colors.grey[600] ?? Colors.grey : Colors.blue.shade300,
-                    ),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                ),
-              ),
-
-              const SizedBox(height: 15),
-
-              if (selectedImage != null)
+                )
+              else
                 Stack(
                   children: [
                     ClipRRect(
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(16),
                       child: Image.memory(
                         selectedImage!,
                         height: 200,
@@ -585,40 +555,54 @@ class _UserComplaintregistrationState extends State<UserComplaintregistration> {
                       ),
                     ),
                     Positioned(
-                      top: 8,
-                      right: 8,
-                      child: CircleAvatar(
-                        backgroundColor: Colors.red.withOpacity(0.8),
-                        radius: 16,
-                        child: IconButton(
-                          padding: EdgeInsets.zero,
-                          icon: const Icon(Icons.close, color: Colors.white, size: 16),
-                          onPressed: () {
-                            setState(() {
-                              selectedImage = null;
-                              imageString = null;
-                            });
-                          },
+                      top: 12,
+                      right: 12,
+                      child: GestureDetector(
+                        onTap: () {
+                          setState(() {
+                            selectedImage = null;
+                            imageString = null;
+                          });
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.all(6),
+                          decoration: BoxDecoration(
+                            color: Colors.black.withOpacity(0.6),
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(Icons.close, color: Colors.white, size: 20),
                         ),
                       ),
                     ),
                   ],
                 ),
+              const SizedBox(height: 32),
 
-              const SizedBox(height: 30),
-
-              SizedBox(
+              // Submit Button
+              Container(
                 width: double.infinity,
-                height: 55,
+                height: 54,
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFF4F46E5), Color(0xFF2563EB)],
+                  ),
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xFF4F46E5).withOpacity(0.4),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
                 child: ElevatedButton(
                   onPressed: _isLoading ? null : _submitComplaint,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.blue,
-                    foregroundColor: Colors.white,
+                    backgroundColor: Colors.transparent,
+                    shadowColor: Colors.transparent,
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(16),
                     ),
-                    elevation: 3,
                   ),
                   child: _isLoading
                       ? const SizedBox(
@@ -626,19 +610,26 @@ class _UserComplaintregistrationState extends State<UserComplaintregistration> {
                           width: 24,
                           child: CircularProgressIndicator(
                             color: Colors.white,
-                            strokeWidth: 2,
+                            strokeWidth: 2.5,
                           ),
                         )
-                      : const Text(
-                          "Submit Complaint",
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                          ),
+                      : const Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text(
+                              "Submit Complaint",
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                              ),
+                            ),
+                            SizedBox(width: 8),
+                            Icon(Icons.send, color: Colors.white, size: 20),
+                          ],
                         ),
                 ),
               ),
-
               const SizedBox(height: 20),
             ],
           ),

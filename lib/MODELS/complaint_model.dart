@@ -15,9 +15,12 @@ class ComplaintModel {
   final DateTime createdAt;
   final DateTime updatedAt;
   
-  // 👇 ADD THESE TWO FIELDS
+  // Map coordinates (optional — only set if user picked a location on the map)
   final double? latitude;
   final double? longitude;
+
+  // Admin remark (optional — admin can add a comment when updating status)
+  final String? adminRemark;
 
   ComplaintModel({
     required this.id,
@@ -33,9 +36,9 @@ class ComplaintModel {
     this.status = 'Pending',
     required this.createdAt,
     required this.updatedAt,
-    // 👇 Add here
     this.latitude,
     this.longitude,
+    this.adminRemark, // Optional admin comment
   });
 
   Map<String, dynamic> toMap() {
@@ -52,9 +55,9 @@ class ComplaintModel {
       'status': status,
       'createdAt': createdAt,
       'updatedAt': updatedAt,
-      // 👇 Add here
       'latitude': latitude,
       'longitude': longitude,
+      'adminRemark': adminRemark, // Save admin remark to Firestore
     };
   }
 
@@ -73,9 +76,9 @@ class ComplaintModel {
       status: map['status'] ?? 'Pending',
       createdAt: (map['createdAt'] as dynamic).toDate(),
       updatedAt: (map['updatedAt'] as dynamic).toDate(),
-      // 👇 Add here
       latitude: map['latitude']?.toDouble(),
       longitude: map['longitude']?.toDouble(),
+      adminRemark: map['adminRemark'], // Read admin remark from Firestore
     );
   }
 
