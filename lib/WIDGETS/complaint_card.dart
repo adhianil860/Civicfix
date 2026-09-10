@@ -61,9 +61,14 @@ class ComplaintCard extends StatelessWidget {
               // Category & Priority
               Wrap(
                 spacing: 8,
+                runSpacing: 4,
                 children: [
-                  _buildInfoChip(complaint.category, Colors.grey),
+                  _buildInfoChip(complaint.category, Colors.blue),
                   _buildPriorityChip(complaint.priority),
+                  _buildInfoChip(
+                    '👍 ${complaint.supportCount} ${complaint.supportCount == 1 ? 'Support' : 'Supports'}',
+                    Colors.orange,
+                  ),
                   _buildInfoChip(
                     '${complaint.createdAt.day}/${complaint.createdAt.month}/${complaint.createdAt.year}',
                     Colors.grey,

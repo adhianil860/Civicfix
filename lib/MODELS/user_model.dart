@@ -4,6 +4,7 @@ class UserModel {
   final String email;
   final String phone;
   final String role;
+  final String? assignedMunicipality;
   final DateTime createdAt;
 
   UserModel({
@@ -12,21 +13,23 @@ class UserModel {
     required this.email,
     required this.phone,
     this.role = 'user',
+    this.assignedMunicipality,
     required this.createdAt,
   });
 
-  // Convert to Map (Firestore save cheyyan)
+  // Convert to Map
   Map<String, dynamic> toMap() {
     return {
       'name': name,
       'email': email,
       'phone': phone,
       'role': role,
+      'assignedMunicipality': assignedMunicipality,
       'createdAt': createdAt,
     };
   }
 
-  // Convert from Map (Firestore il ninnu read cheyyan)
+  // Convert from Map
   factory UserModel.fromMap(Map<String, dynamic> map, String uid) {
     return UserModel(
       uid: uid,
@@ -34,6 +37,7 @@ class UserModel {
       email: map['email'] ?? '',
       phone: map['phone'] ?? '',
       role: map['role'] ?? 'user',
+      assignedMunicipality: map['assignedMunicipality'],
       createdAt: (map['createdAt'] as dynamic).toDate(),
     );
   }

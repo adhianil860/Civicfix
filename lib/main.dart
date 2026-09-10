@@ -1,3 +1,4 @@
+import 'package:civicfic/theme/app_theme.dart';
 import 'package:civicfic/screens/splash_screen.dart';
 import 'package:civicfic/firebase_options.dart';
 import 'package:civicfic/providers/settings_provider.dart';
@@ -36,8 +37,10 @@ class MyApp extends StatelessWidget {
           debugShowCheckedModeBanner: false,
           title: 'CivicFix',
           
-          // 👇 Full App Dark Mode - Settings il ninnu value edukkunnu
-          theme: settings.isDarkMode ? ThemeData.dark() : ThemeData.light(),
+          // Aesthetic CivicFix Themes
+          theme: AppTheme.lightTheme,
+          darkTheme: AppTheme.darkTheme,
+          themeMode: settings.isDarkMode ? ThemeMode.dark : ThemeMode.light,
           
           locale: settings.locale,
           supportedLocales: const [

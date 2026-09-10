@@ -1,10 +1,8 @@
 import 'package:civicfic/SCREENS/USER/user_homepage.dart';
 import 'package:civicfic/WIDGETS/loading_widget.dart';
 import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:civicfic/services/firestore_service.dart';
-import 'package:civicfic/services/auth_service.dart';
 import 'package:civicfic/services/notification_service.dart';
 import 'package:civicfic/models/user_model.dart';
 import 'package:civicfic/screens/login_screen.dart';
@@ -262,8 +260,6 @@ class _UserProfileState extends State<UserProfile> {
 }
 
   void _showSettingsPopup() {
-    final settings = Provider.of<SettingsProvider>(context, listen: false);
-
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,

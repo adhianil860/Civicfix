@@ -15,9 +15,19 @@ class ComplaintModel {
   final DateTime createdAt;
   final DateTime updatedAt;
   
-  // 👇 ADD THESE TWO FIELDS
+  // Map coordinates (optional — only set if user picked a location on the map)
   final double? latitude;
   final double? longitude;
+
+  // Admin remark (optional — admin can add a comment when updating status)
+  final String? adminRemark;
+
+  // Municipality (automatically assigned via reverse geocoding / GPS)
+  final String municipality;
+
+  // Citizen Upvote / Support Mechanism
+  final int supportCount;
+  final List<String> supportedUserIds;
 
   ComplaintModel({
     required this.id,
@@ -33,10 +43,13 @@ class ComplaintModel {
     this.status = 'Pending',
     required this.createdAt,
     required this.updatedAt,
-    // 👇 Add here
     this.latitude,
     this.longitude,
-  });
+    this.adminRemark,
+    this.municipality = 'Thrikkakara Municipality',
+    this.supportCount = 0,
+    List<String>? supportedUserIds,
+  }) : supportedUserIds = supportedUserIds ?? [];
 
   Map<String, dynamic> toMap() {
     return {
@@ -52,9 +65,12 @@ class ComplaintModel {
       'status': status,
       'createdAt': createdAt,
       'updatedAt': updatedAt,
-      // 👇 Add here
       'latitude': latitude,
       'longitude': longitude,
+      'adminRemark': adminRemark,
+      'municipality': municipality,
+      'supportCount': supportCount,
+      'supportedUserIds': supportedUserIds,
     };
   }
 
@@ -73,9 +89,12 @@ class ComplaintModel {
       status: map['status'] ?? 'Pending',
       createdAt: (map['createdAt'] as dynamic).toDate(),
       updatedAt: (map['updatedAt'] as dynamic).toDate(),
-      // 👇 Add here
       latitude: map['latitude']?.toDouble(),
       longitude: map['longitude']?.toDouble(),
+      adminRemark: map['adminRemark'],
+      municipality: map['municipality'] ?? 'Thrikkakara Municipality',
+      supportCount: map['supportCount']?.toInt() ?? 0,
+      supportedUserIds: List<String>.from(map['supportedUserIds'] ?? []),
     );
   }
 

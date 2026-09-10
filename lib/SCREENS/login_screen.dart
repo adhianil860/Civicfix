@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:provider/provider.dart';
 import 'package:civicfic/services/auth_service.dart';
 import 'package:civicfic/services/validation_service.dart';
@@ -60,7 +59,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
       NotificationService().showSuccess(context, 'Login successful!');
 
-      if (role == "admin") {
+      if (role == "admin" || role == "sub_admin" || role == "super_admin") {
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (_) => const AdminHomeScreen()),

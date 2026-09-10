@@ -10,7 +10,7 @@ class AuthService extends ChangeNotifier {
   User? get user => _user;
   String? get userRole => _userRole;
   bool get isLoggedIn => _user != null;
-  bool get isAdmin => _userRole == 'admin';
+  bool get isAdmin => _userRole == 'admin' || _userRole == 'sub_admin' || _userRole == 'super_admin';
 
   AuthService() {
     _auth.authStateChanges().listen((User? user) async {
@@ -37,14 +37,79 @@ class AuthService extends ChangeNotifier {
     }
   }
 
-  // Login
+  // Ensure sub-admin accounts are provisioned in Firestore with appropriate role and municipality
+  Future<void> _ensureSubAdminProvisioned(User user, String cleanEmail) async {
+    String lowerEmail = cleanEmail.toLowerCase();
+    String? assignedMuni;
+    String? adminName;
+
+    if (lowerEmail.contains('thrikkakara') || lowerEmail.contains('hrikkakara')) {
+      assignedMuni = 'Thrikkakara Municipality';
+      adminName = 'Thrikkakara Sub-Admin';
+    } else if (lowerEmail.contains('kalamassery')) {
+      assignedMuni = 'Kalamassery Municipality';
+      adminName = 'Kalamassery Sub-Admin';
+    } else if (lowerEmail == 'admin@gmail.com') {
+      adminName = 'Super Admin';
+    }
+
+    if (assignedMuni != null || lowerEmail == 'admin@gmail.com') {
+      final docRef = FirebaseFirestore.instance.collection('users').doc(user.uid);
+      final doc = await docRef.get();
+      String role = lowerEmail == 'admin@gmail.com' ? 'super_admin' : 'sub_admin';
+
+      if (!doc.exists) {
+        await docRef.set({
+          'uid': user.uid,
+          'name': adminName ?? 'Sub-Admin',
+          'email': user.email ?? cleanEmail,
+          'role': role,
+          'assignedMunicipality': assignedMuni,
+          'createdAt': FieldValue.serverTimestamp(),
+        });
+      } else {
+        Map<String, dynamic> updates = {};
+        final data = doc.data() as Map<String, dynamic>?;
+        if (data != null) {
+          if (data['role'] != role && data['role'] != 'admin') updates['role'] = role;
+          if (assignedMuni != null && data['assignedMunicipality'] != assignedMuni) {
+            updates['assignedMunicipality'] = assignedMuni;
+          }
+        }
+        if (updates.isNotEmpty) {
+          await docRef.update(updates);
+        }
+      }
+    }
+  }
+
+  // Login with sub-admin auto-provisioning
   Future<UserCredential> login(String email, String password) async {
+    String cleanEmail = email.trim();
+    String lowerEmail = cleanEmail.toLowerCase();
+
     try {
-      return await _auth.signInWithEmailAndPassword(
-        email: email.trim(),
+      UserCredential cred = await _auth.signInWithEmailAndPassword(
+        email: cleanEmail,
         password: password,
       );
+      await _ensureSubAdminProvisioned(cred.user!, cleanEmail);
+      return cred;
     } on FirebaseAuthException catch (e) {
+      if (e.code == 'user-not-found' || e.code == 'invalid-credential') {
+        if (lowerEmail.contains('thrikkakara') || lowerEmail.contains('hrikkakara') || lowerEmail.contains('kalamassery') || lowerEmail == 'admin@gmail.com') {
+          try {
+            UserCredential cred = await _auth.createUserWithEmailAndPassword(
+              email: cleanEmail,
+              password: password,
+            );
+            await _ensureSubAdminProvisioned(cred.user!, cleanEmail);
+            return cred;
+          } catch (_) {
+            throw _getAuthErrorMessage(e.code);
+          }
+        }
+      }
       throw _getAuthErrorMessage(e.code);
     } catch (e) {
       throw 'Login failed. Please try again.';
@@ -82,6 +147,7 @@ class AuthService extends ChangeNotifier {
           .collection('users')
           .doc(uid)
           .get();
+      if (!doc.exists) return 'user';
       return doc['role'] ?? 'user';
     } catch (e) {
       return 'user';
@@ -105,7 +171,8 @@ class AuthService extends ChangeNotifier {
       case 'user-not-found':
         return 'No user found with this email.';
       case 'wrong-password':
-        return 'Incorrect password.';
+      case 'invalid-credential':
+        return 'Incorrect password or email.';
       case 'email-already-in-use':
         return 'Email already in use.';
       case 'invalid-email':

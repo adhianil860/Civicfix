@@ -5,7 +5,6 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:civicfic/screens/login_screen.dart';
 import 'package:civicfic/providers/settings_provider.dart';
 import 'package:civicfic/services/firestore_service.dart';
-import 'package:civicfic/services/auth_service.dart';
 import 'package:civicfic/services/notification_service.dart';
 import 'package:civicfic/models/admin_model.dart';
 import 'package:provider/provider.dart';
