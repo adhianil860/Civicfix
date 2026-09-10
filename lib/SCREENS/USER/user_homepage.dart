@@ -510,9 +510,9 @@ class HomeContent extends StatelessWidget {
                 shrinkWrap: true,
                 physics: const NeverScrollableScrollPhysics(),
                 crossAxisCount: 2,
-                mainAxisSpacing: 16,
-                crossAxisSpacing: 16,
-                childAspectRatio: 1.6,
+                mainAxisSpacing: 12,
+                crossAxisSpacing: 12,
+                childAspectRatio: 1.4,
                 children: [
                   _buildStatCard("Total", total.toString(), Icons.analytics, const Color(0xFF4F46E5), isDark),
                   _buildStatCard("Pending", pending.toString(), Icons.pending_actions, Colors.orange, isDark),
@@ -642,9 +642,9 @@ class HomeContent extends StatelessWidget {
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
       crossAxisCount: 2,
-      mainAxisSpacing: 16,
-      crossAxisSpacing: 16,
-      childAspectRatio: 1.6,
+      mainAxisSpacing: 12,
+      crossAxisSpacing: 12,
+      childAspectRatio: 1.4,
       children: [
         _buildStatCard("Total", "-", Icons.analytics, const Color(0xFF4F46E5), isDark),
         _buildStatCard("Pending", "-", Icons.pending_actions, Colors.orange, isDark),
@@ -656,7 +656,7 @@ class HomeContent extends StatelessWidget {
 
   Widget _buildStatCard(String title, String value, IconData icon, Color color, bool isDark) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       decoration: BoxDecoration(
         color: isDark ? const Color(0xFF1E293B) : Colors.white,
         borderRadius: BorderRadius.circular(16),
@@ -684,17 +684,20 @@ class HomeContent extends StatelessWidget {
                 ),
                 child: Icon(icon, color: color, size: 20),
               ),
-              Text(
-                value,
-                style: TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                  color: isDark ? Colors.white : Colors.black87,
+              FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Text(
+                  value,
+                  style: TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                    color: isDark ? Colors.white : Colors.black87,
+                  ),
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 12),
+          const Spacer(),
           Text(
             title,
             style: TextStyle(
@@ -702,6 +705,8 @@ class HomeContent extends StatelessWidget {
               fontWeight: FontWeight.w600,
               color: isDark ? Colors.grey[400] : Colors.grey[600],
             ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
           ),
         ],
       ),

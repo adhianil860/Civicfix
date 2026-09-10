@@ -22,6 +22,13 @@ class ComplaintModel {
   // Admin remark (optional — admin can add a comment when updating status)
   final String? adminRemark;
 
+  // Municipality (automatically assigned via reverse geocoding / GPS)
+  final String municipality;
+
+  // Citizen Upvote / Support Mechanism
+  final int supportCount;
+  final List<String> supportedUserIds;
+
   ComplaintModel({
     required this.id,
     required this.title,
@@ -38,8 +45,11 @@ class ComplaintModel {
     required this.updatedAt,
     this.latitude,
     this.longitude,
-    this.adminRemark, // Optional admin comment
-  });
+    this.adminRemark,
+    this.municipality = 'Thrikkakara Municipality',
+    this.supportCount = 0,
+    List<String>? supportedUserIds,
+  }) : supportedUserIds = supportedUserIds ?? [];
 
   Map<String, dynamic> toMap() {
     return {
@@ -57,7 +67,10 @@ class ComplaintModel {
       'updatedAt': updatedAt,
       'latitude': latitude,
       'longitude': longitude,
-      'adminRemark': adminRemark, // Save admin remark to Firestore
+      'adminRemark': adminRemark,
+      'municipality': municipality,
+      'supportCount': supportCount,
+      'supportedUserIds': supportedUserIds,
     };
   }
 
@@ -78,7 +91,10 @@ class ComplaintModel {
       updatedAt: (map['updatedAt'] as dynamic).toDate(),
       latitude: map['latitude']?.toDouble(),
       longitude: map['longitude']?.toDouble(),
-      adminRemark: map['adminRemark'], // Read admin remark from Firestore
+      adminRemark: map['adminRemark'],
+      municipality: map['municipality'] ?? 'Thrikkakara Municipality',
+      supportCount: map['supportCount']?.toInt() ?? 0,
+      supportedUserIds: List<String>.from(map['supportedUserIds'] ?? []),
     );
   }
 

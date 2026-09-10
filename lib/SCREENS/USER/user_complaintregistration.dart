@@ -7,11 +7,13 @@ import 'package:civicfic/services/firestore_service.dart';
 import 'package:civicfic/services/image_service.dart';
 import 'package:civicfic/services/validation_service.dart';
 import 'package:civicfic/services/notification_service.dart';
+import 'package:civicfic/services/location_service.dart';
 import 'package:civicfic/models/complaint_model.dart';
 import 'package:civicfic/providers/settings_provider.dart';
 import 'package:provider/provider.dart';
 
 import 'package:civicfic/screens/user/map_picker_screen.dart';
+import 'package:civicfic/screens/complaint_details_screen.dart';
 
 class UserComplaintregistration extends StatefulWidget {
   const UserComplaintregistration({super.key});
@@ -31,6 +33,7 @@ class _UserComplaintregistrationState extends State<UserComplaintregistration> {
 
   double? selectedLatitude;
   double? selectedLongitude;
+  String? detectedMunicipality;
 
   final ImagePicker picker = ImagePicker();
 
@@ -38,9 +41,11 @@ class _UserComplaintregistrationState extends State<UserComplaintregistration> {
   String? imageString;
 
   bool _isLoading = false;
+  bool _isFetchingGPS = false;
 
   final FirestoreService _firestoreService = FirestoreService();
   final ImageService _imageService = ImageService();
+  final LocationService _locationService = LocationService();
 
   final List<String> categories = [
     "Road Damage",
@@ -80,6 +85,40 @@ class _UserComplaintregistrationState extends State<UserComplaintregistration> {
     NotificationService().showInfo(context, 'Image uploaded successfully!');
   }
 
+  Future<void> _fetchLiveGPS() async {
+    setState(() => _isFetchingGPS = true);
+    final pos = await _locationService.getCurrentPosition(context);
+    if (pos != null && mounted) {
+      String address = await _locationService.reverseGeocode(pos.latitude, pos.longitude);
+      String muni = _locationService.detectMunicipality(pos.latitude, pos.longitude, address);
+
+      setState(() {
+        selectedLatitude = pos.latitude;
+        selectedLongitude = pos.longitude;
+        locationController.text = address;
+        detectedMunicipality = muni;
+      });
+
+      NotificationService().showSuccess(
+        context,
+        '📍 Live GPS Location & Address Autofilled!',
+      );
+
+      if (mounted) {
+        await LocationService.showLocationDetailsDialog(
+          context: context,
+          latitude: pos.latitude,
+          longitude: pos.longitude,
+          address: address,
+          municipality: muni,
+        );
+      }
+    }
+    if (mounted) {
+      setState(() => _isFetchingGPS = false);
+    }
+  }
+
   Future<void> _pickLocationFromMap() async {
     try {
       final result = await Navigator.push<MapPickerResult>(
@@ -90,20 +129,16 @@ class _UserComplaintregistrationState extends State<UserComplaintregistration> {
       );
 
       if (result != null && mounted) {
-        String address = await _getAddressFromCoordinates(
-          result.latitude,
-          result.longitude,
-        );
-
         setState(() {
           selectedLatitude = result.latitude;
           selectedLongitude = result.longitude;
-          locationController.text = address;
+          locationController.text = result.address;
+          detectedMunicipality = result.municipality;
         });
 
         NotificationService().showInfo(
           context,
-          '📍 Location selected successfully!',
+          '📍 Location & Address confirmed!',
         );
       }
     } catch (e) {
@@ -114,8 +149,100 @@ class _UserComplaintregistrationState extends State<UserComplaintregistration> {
     }
   }
 
-  Future<String> _getAddressFromCoordinates(double lat, double lng) async {
-    return '📍 ${lat.toStringAsFixed(6)}, ${lng.toStringAsFixed(6)}';
+  Future<bool> _checkAndPromptDuplicate(double lat, double lng) async {
+    List<ComplaintModel> nearby = await _firestoreService.getNearbyComplaints(lat, lng, maxDistanceMeters: 50.0);
+    if (nearby.isEmpty) return true; // No duplicate, proceed
+
+    final existing = nearby.first;
+    if (!mounted) return true;
+
+    final settings = Provider.of<SettingsProvider>(context, listen: false);
+    final isDark = settings.isDarkMode;
+
+    bool? choice = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        backgroundColor: isDark ? const Color(0xFF1E293B) : Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Row(
+          children: [
+            Icon(Icons.report_problem_rounded, color: Colors.orange, size: 28),
+            SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                'Similar Complaint Found Nearby!',
+                style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold),
+              ),
+            ),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'A similar complaint has already been reported near this location (within 50m).',
+              style: TextStyle(fontSize: 14, color: isDark ? Colors.grey[300] : Colors.black87),
+            ),
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: isDark ? Colors.grey[800] : Colors.grey[100],
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('• Issue: ${existing.title}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                  const SizedBox(height: 4),
+                  Text('• Category: ${existing.category}', style: const TextStyle(fontSize: 12, color: Colors.grey)),
+                  const SizedBox(height: 4),
+                  Text('• Status: ${existing.status}', style: TextStyle(fontSize: 12, color: existing.statusColor, fontWeight: FontWeight.bold)),
+                ],
+              ),
+            ),
+            const SizedBox(height: 14),
+            const Text(
+              'Would you like to support the existing report instead of creating a duplicate?',
+              style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Color(0xFF4F46E5)),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context, true); // Submit new report anyway
+            },
+            child: Text('Submit New Report', style: TextStyle(color: isDark ? Colors.grey[400] : Colors.grey[600])),
+          ),
+          ElevatedButton.icon(
+            icon: const Icon(Icons.thumb_up_alt, size: 16),
+            label: const Text('Support Existing'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF4F46E5),
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            ),
+            onPressed: () {
+              Navigator.pop(context, false); // Cancel submit
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => ComplaintDetailsScreen(
+                    complaint: existing,
+                    isAdmin: false,
+                  ),
+                ),
+              );
+            },
+          ),
+        ],
+      ),
+    );
+
+    return choice ?? false;
   }
 
   Future<void> _submitComplaint() async {
@@ -159,10 +286,14 @@ class _UserComplaintregistrationState extends State<UserComplaintregistration> {
     if (selectedLatitude == null || selectedLongitude == null) {
       NotificationService().showError(
         context,
-        'Please select location from map using 📍 button',
+        'Please select location from GPS or Map',
       );
       return;
     }
+
+    // 50-Meter Duplicate Complaint Detection
+    bool proceed = await _checkAndPromptDuplicate(selectedLatitude!, selectedLongitude!);
+    if (!proceed) return;
 
     setState(() {
       _isLoading = true;
@@ -193,6 +324,7 @@ class _UserComplaintregistrationState extends State<UserComplaintregistration> {
         updatedAt: DateTime.now(),
         latitude: selectedLatitude,
         longitude: selectedLongitude,
+        municipality: detectedMunicipality ?? 'Thrikkakara Municipality',
       );
 
       await _firestoreService.addComplaint(complaint);
@@ -212,6 +344,7 @@ class _UserComplaintregistrationState extends State<UserComplaintregistration> {
         imageString = null;
         selectedLatitude = null;
         selectedLongitude = null;
+        detectedMunicipality = null;
         _isLoading = false;
       });
 
@@ -257,7 +390,7 @@ class _UserComplaintregistrationState extends State<UserComplaintregistration> {
         borderRadius: BorderRadius.circular(16),
         borderSide: const BorderSide(color: Color(0xFF4F46E5), width: 1.5),
       ),
-      contentPadding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
+      contentPadding: const EdgeInsets.symmetric(vertical: 14, horizontal: 12),
     );
   }
 
@@ -372,6 +505,7 @@ class _UserComplaintregistrationState extends State<UserComplaintregistration> {
                         const SizedBox(height: 8),
                         DropdownButtonFormField<String>(
                           value: selectedCategory,
+                          isExpanded: true,
                           dropdownColor: settings.isDarkMode ? const Color(0xFF1E293B) : Colors.white,
                           style: TextStyle(color: settings.isDarkMode ? Colors.white : Colors.black),
                           icon: const Icon(Icons.keyboard_arrow_down, color: Color(0xFF4F46E5)),
@@ -379,7 +513,10 @@ class _UserComplaintregistrationState extends State<UserComplaintregistration> {
                           items: categories.map((category) {
                             return DropdownMenuItem(
                               value: category,
-                              child: Text(category),
+                              child: Text(
+                                category,
+                                overflow: TextOverflow.ellipsis,
+                              ),
                             );
                           }).toList(),
                           onChanged: (value) => setState(() => selectedCategory = value),
@@ -387,7 +524,7 @@ class _UserComplaintregistrationState extends State<UserComplaintregistration> {
                       ],
                     ),
                   ),
-                  const SizedBox(width: 16),
+                  const SizedBox(width: 12),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -403,6 +540,7 @@ class _UserComplaintregistrationState extends State<UserComplaintregistration> {
                         const SizedBox(height: 8),
                         DropdownButtonFormField<String>(
                           value: selectedPriority,
+                          isExpanded: true,
                           dropdownColor: settings.isDarkMode ? const Color(0xFF1E293B) : Colors.white,
                           style: TextStyle(color: settings.isDarkMode ? Colors.white : Colors.black),
                           icon: const Icon(Icons.keyboard_arrow_down, color: Color(0xFF4F46E5)),
@@ -410,7 +548,10 @@ class _UserComplaintregistrationState extends State<UserComplaintregistration> {
                           items: priorities.map((priority) {
                             return DropdownMenuItem(
                               value: priority,
-                              child: Text(priority),
+                              child: Text(
+                                priority,
+                                overflow: TextOverflow.ellipsis,
+                              ),
                             );
                           }).toList(),
                           onChanged: (value) => setState(() => selectedPriority = value),
@@ -422,9 +563,9 @@ class _UserComplaintregistrationState extends State<UserComplaintregistration> {
               ),
               const SizedBox(height: 20),
 
-              // Location Field
+              // Location Field with Live GPS & Map Buttons
               Text(
-                "Location",
+                "Location & Address",
                 style: TextStyle(
                   fontWeight: FontWeight.w600,
                   fontSize: 15,
@@ -437,17 +578,46 @@ class _UserComplaintregistrationState extends State<UserComplaintregistration> {
                   Expanded(
                     child: TextField(
                       controller: locationController,
-                      readOnly: true,
                       style: TextStyle(color: settings.isDarkMode ? Colors.white : Colors.black),
-                      decoration: _buildInputDecoration("Tap map button to select", Icons.location_on, settings),
+                      decoration: _buildInputDecoration("GPS / Map will autofill address", Icons.location_on, settings),
                     ),
                   ),
-                  const SizedBox(width: 12),
+                  const SizedBox(width: 8),
+                  // Live GPS Fetch Button
+                  GestureDetector(
+                    onTap: _isFetchingGPS ? null : _fetchLiveGPS,
+                    child: Container(
+                      height: 52,
+                      width: 52,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF10B981),
+                        borderRadius: BorderRadius.circular(16),
+                        boxShadow: [
+                          BoxShadow(
+                            color: const Color(0xFF10B981).withOpacity(0.3),
+                            blurRadius: 8,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      child: _isFetchingGPS
+                          ? const Center(
+                              child: SizedBox(
+                                width: 22,
+                                height: 22,
+                                child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                              ),
+                            )
+                          : const Icon(Icons.my_location, color: Colors.white, size: 24),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  // Map Picker Button
                   GestureDetector(
                     onTap: _pickLocationFromMap,
                     child: Container(
-                      height: 56,
-                      width: 56,
+                      height: 52,
+                      width: 52,
                       decoration: BoxDecoration(
                         color: const Color(0xFF4F46E5),
                         borderRadius: BorderRadius.circular(16),
@@ -459,37 +629,69 @@ class _UserComplaintregistrationState extends State<UserComplaintregistration> {
                           ),
                         ],
                       ),
-                      child: const Icon(Icons.map, color: Colors.white, size: 28),
+                      child: const Icon(Icons.map, color: Colors.white, size: 24),
                     ),
                   ),
                 ],
               ),
               if (selectedLatitude != null && selectedLongitude != null)
                 Padding(
-                  padding: const EdgeInsets.only(top: 12),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                    decoration: BoxDecoration(
-                      color: Colors.green.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: Colors.green.withOpacity(0.3)),
-                    ),
-                    child: Row(
-                      children: [
-                        const Icon(Icons.check_circle, color: Colors.green, size: 18),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            '📍 ${selectedLatitude!.toStringAsFixed(5)}, ${selectedLongitude!.toStringAsFixed(5)}',
-                            style: TextStyle(
-                              fontSize: 13,
-                              fontWeight: FontWeight.w500,
-                              color: settings.isDarkMode ? Colors.white : Colors.black87,
+                  padding: const EdgeInsets.only(top: 10),
+                  child: Column(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                        decoration: BoxDecoration(
+                          color: Colors.green.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: Colors.green.withOpacity(0.3)),
+                        ),
+                        child: Row(
+                          children: [
+                            const Icon(Icons.check_circle, color: Colors.green, size: 18),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                'GPS Coordinates: ${selectedLatitude!.toStringAsFixed(5)}, ${selectedLongitude!.toStringAsFixed(5)}',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w500,
+                                  color: settings.isDarkMode ? Colors.white : Colors.black87,
+                                ),
+                              ),
                             ),
+                          ],
+                        ),
+                      ),
+                      if (detectedMunicipality != null) ...[
+                        const SizedBox(height: 6),
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF2563EB).withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: const Color(0xFF2563EB).withOpacity(0.3)),
+                          ),
+                          child: Row(
+                            children: [
+                              const Icon(Icons.account_balance, color: Color(0xFF2563EB), size: 18),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  '🏛️ Municipality: $detectedMunicipality',
+                                  style: const TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.bold,
+                                    color: Color(0xFF2563EB),
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                       ],
-                    ),
+                    ],
                   ),
                 ),
               const SizedBox(height: 20),

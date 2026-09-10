@@ -13,7 +13,9 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 
 class AdminComplaints extends StatefulWidget {
-  const AdminComplaints({super.key});
+  final String? initialFilter;
+  final String? municipalityFilter;
+  const AdminComplaints({super.key, this.initialFilter, this.municipalityFilter});
 
   @override
   State<AdminComplaints> createState() => _AdminComplaintsState();
@@ -21,8 +23,14 @@ class AdminComplaints extends StatefulWidget {
 
 class _AdminComplaintsState extends State<AdminComplaints> {
   final FirestoreService _firestoreService = FirestoreService();
-  String _selectedFilter = 'All'; // Filter by status
+  late String _selectedFilter;
   String _searchQuery = ''; // Search by title
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedFilter = widget.initialFilter ?? 'All';
+  }
   
   // Status options for filtering and updating
   final List<String> _statusOptions = [
@@ -145,11 +153,14 @@ class _AdminComplaintsState extends State<AdminComplaints> {
                   );
                 }
 
-                // Filter data locally based on status and search query
+                // Filter data locally based on status, municipality, and search query
                 List<ComplaintModel> filteredComplaints = snapshot.data!.where((complaint) {
                   final matchesFilter = _selectedFilter == 'All' || complaint.status == _selectedFilter;
+                  final matchesMuni = widget.municipalityFilter == null ||
+                      widget.municipalityFilter == 'All' ||
+                      complaint.municipality == widget.municipalityFilter;
                   final matchesSearch = complaint.title.toLowerCase().contains(_searchQuery);
-                  return matchesFilter && matchesSearch;
+                  return matchesFilter && matchesMuni && matchesSearch;
                 }).toList();
 
                 if (filteredComplaints.isEmpty) {
@@ -194,72 +205,103 @@ class _AdminComplaintsState extends State<AdminComplaints> {
       },
       child: Container(
         margin: const EdgeInsets.only(bottom: 16),
-      decoration: BoxDecoration(
-        color: isDark ? Colors.grey[850] : Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: isDark ? Colors.grey[800]! : Colors.grey.shade200,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.04),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
+        decoration: BoxDecoration(
+          color: isDark ? Colors.grey[850] : Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: isDark ? Colors.grey[800]! : Colors.grey.shade200,
           ),
-        ],
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Header with Title and Status
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.all(6),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFF2563EB).withOpacity(0.1),
-                              shape: BoxShape.circle,
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.04),
+              blurRadius: 12,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Header with Title and Status
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(6),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF2563EB).withOpacity(0.1),
+                                shape: BoxShape.circle,
+                              ),
+                              child: const Icon(Icons.category, size: 16, color: Color(0xFF2563EB)),
                             ),
-                            child: const Icon(Icons.category, size: 16, color: Color(0xFF2563EB)),
-                          ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Text(
-                              complaint.title,
-                              style: TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                                color: isDark ? Colors.white : Colors.black87,
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                complaint.title,
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                  color: isDark ? Colors.white : Colors.black87,
+                                ),
                               ),
                             ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        complaint.category,
-                        style: TextStyle(
-                          fontSize: 13,
-                          color: isDark ? Colors.grey[400] : Colors.grey[600],
-                          fontWeight: FontWeight.w500,
+                          ],
                         ),
-                      ),
-                    ],
+                        const SizedBox(height: 6),
+                        Wrap(
+                          spacing: 6,
+                          runSpacing: 4,
+                          crossAxisAlignment: WrapCrossAlignment.center,
+                          children: [
+                            Text(
+                              complaint.category,
+                              style: TextStyle(
+                                fontSize: 13,
+                                color: isDark ? Colors.grey[400] : Colors.grey[600],
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                              decoration: BoxDecoration(
+                                color: Colors.orange.withOpacity(0.15),
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(color: Colors.orange.withOpacity(0.4)),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const Icon(Icons.thumb_up_alt, size: 12, color: Colors.orange),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    '${complaint.supportCount} ${complaint.supportCount == 1 ? 'Supporter' : 'Supporters'}',
+                                    style: TextStyle(
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.bold,
+                                      color: isDark ? Colors.orange[300] : Colors.orange[800],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
                   ),
-                ),
-                _buildStatusBadge(complaint.status),
-              ],
-            ),
+                  const SizedBox(width: 8),
+                  _buildStatusBadge(complaint.status),
+                ],
+              ),
             const SizedBox(height: 12),
             
             // Description preview
@@ -283,16 +325,20 @@ class _AdminComplaintsState extends State<AdminComplaints> {
             const SizedBox(height: 16),
             
             // Action buttons
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            Wrap(
+              alignment: WrapAlignment.spaceBetween,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              spacing: 6,
+              runSpacing: 8,
               children: [
                 Row(
+                  mainAxisSize: MainAxisSize.min,
                   children: [
                     OutlinedButton.icon(
-                      icon: const Icon(Icons.visibility, size: 16),
-                      label: const Text('View'),
+                      icon: const Icon(Icons.visibility, size: 14),
+                      label: const Text('View', style: TextStyle(fontSize: 12)),
                       style: OutlinedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                         side: BorderSide(color: isDark ? Colors.grey[700]! : Colors.grey[300]!),
                       ),
@@ -308,21 +354,23 @@ class _AdminComplaintsState extends State<AdminComplaints> {
                         );
                       },
                     ),
-                    const SizedBox(width: 8),
-                    if (complaint.latitude != null && complaint.longitude != null)
+                    if (complaint.latitude != null && complaint.longitude != null) ...[
+                      const SizedBox(width: 6),
                       OutlinedButton.icon(
-                        icon: const Icon(Icons.map, size: 16),
-                        label: const Text('Map'),
+                        icon: const Icon(Icons.map, size: 14),
+                        label: const Text('Map', style: TextStyle(fontSize: 12)),
                         style: OutlinedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                           side: BorderSide(color: isDark ? Colors.grey[700]! : Colors.grey[300]!),
                         ),
                         onPressed: () => _showMapDialog(complaint, isDark),
                       ),
+                    ],
                   ],
                 ),
                 Row(
+                  mainAxisSize: MainAxisSize.min,
                   children: [
                     ElevatedButton(
                       onPressed: () => _showUpdateStatusDialog(complaint, isDark),
@@ -330,21 +378,21 @@ class _AdminComplaintsState extends State<AdminComplaints> {
                         backgroundColor: const Color(0xFF2563EB),
                         foregroundColor: Colors.white,
                         elevation: 0,
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                       ),
-                      child: const Text('Update', style: TextStyle(fontWeight: FontWeight.w600)),
+                      child: const Text('Update', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
                     ),
-                    const SizedBox(width: 8),
+                    const SizedBox(width: 6),
                     IconButton(
-                      icon: const Icon(Icons.delete_outline, color: Colors.redAccent),
+                      icon: const Icon(Icons.delete_outline, color: Colors.redAccent, size: 20),
                       padding: EdgeInsets.zero,
                       constraints: const BoxConstraints(),
-                      splashRadius: 24,
+                      splashRadius: 20,
                       onPressed: () => _showDeleteConfirmation(complaint, isDark),
                     ),
                   ],
-                )
+                ),
               ],
             ),
           ],

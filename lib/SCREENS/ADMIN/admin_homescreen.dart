@@ -18,11 +18,46 @@ class AdminHomeScreen extends StatefulWidget {
 
 class _AdminHomeScreenState extends State<AdminHomeScreen> {
   int selectedPage = 0;
+  String complaintsFilter = 'All';
+  String selectedMunicipality = 'All';
+  String userRole = 'super_admin';
+  String adminTitle = 'Municipality Admin';
   final FirestoreService _firestoreService = FirestoreService();
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUserProfile();
+  }
+
+  Future<void> _loadUserProfile() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user != null) {
+      final userModel = await _firestoreService.getUser(user.uid);
+      if (userModel != null && mounted) {
+        setState(() {
+          userRole = userModel.role;
+          if (userModel.role == 'sub_admin' && userModel.assignedMunicipality != null) {
+            selectedMunicipality = userModel.assignedMunicipality!;
+            adminTitle = '${userModel.assignedMunicipality} Admin';
+          } else {
+            adminTitle = 'Super Admin';
+          }
+        });
+      }
+    }
+  }
 
   void _navigateToPage(int index) {
     setState(() {
       selectedPage = index;
+    });
+  }
+
+  void _navigateToComplaintsWithFilter(String filter) {
+    setState(() {
+      complaintsFilter = filter;
+      selectedPage = 1;
     });
   }
 
@@ -242,11 +277,25 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
       ),
       body: IndexedStack(
         index: selectedPage,
-        children: const [
-          AdminDashboardContent(),
-          AdminComplaints(),
-          AdminAnnouncements(),
-          AdminProfile(),
+        children: [
+          AdminDashboardContent(
+            onFilterTap: (filter) => _navigateToComplaintsWithFilter(filter),
+            municipalityFilter: selectedMunicipality,
+            adminTitle: adminTitle,
+            userRole: userRole,
+            onMunicipalityChanged: (newMuni) {
+              setState(() {
+                selectedMunicipality = newMuni;
+              });
+            },
+          ),
+          AdminComplaints(
+            key: ValueKey('${complaintsFilter}_$selectedMunicipality'),
+            initialFilter: complaintsFilter,
+            municipalityFilter: selectedMunicipality,
+          ),
+          const AdminAnnouncements(),
+          const AdminProfile(),
         ],
       ),
       bottomNavigationBar: BottomNavigationBar(
@@ -288,7 +337,20 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
 
 // ========== ADMIN DASHBOARD CONTENT ==========
 class AdminDashboardContent extends StatelessWidget {
-  const AdminDashboardContent({super.key});
+  final Function(String filter)? onFilterTap;
+  final String? municipalityFilter;
+  final String? adminTitle;
+  final String? userRole;
+  final Function(String muni)? onMunicipalityChanged;
+
+  const AdminDashboardContent({
+    super.key,
+    this.onFilterTap,
+    this.municipalityFilter,
+    this.adminTitle,
+    this.userRole,
+    this.onMunicipalityChanged,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -344,13 +406,16 @@ class AdminDashboardContent extends StatelessWidget {
                     children: [
                       Row(
                         children: [
-                          const Text(
-                            "Municipality Admin",
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                              letterSpacing: 0.5,
+                          Flexible(
+                            child: Text(
+                              adminTitle ?? "Municipality Admin",
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                letterSpacing: 0.5,
+                              ),
+                              overflow: TextOverflow.ellipsis,
                             ),
                           ),
                           const SizedBox(width: 8),
@@ -363,6 +428,7 @@ class AdminDashboardContent extends StatelessWidget {
                               border: Border.all(color: Colors.greenAccent, width: 1),
                             ),
                             child: const Row(
+                              mainAxisSize: MainAxisSize.min,
                               children: [
                                 CircleAvatar(radius: 3, backgroundColor: Colors.greenAccent),
                                 SizedBox(width: 4),
@@ -377,9 +443,9 @@ class AdminDashboardContent extends StatelessWidget {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        "Manage • Monitor • Resolve",
+                        userRole == 'super_admin' ? "Super Admin • All Regions" : "Region: ${municipalityFilter ?? 'Assigned Area'}",
                         style: TextStyle(
-                          color: Colors.white.withOpacity(0.8),
+                          color: Colors.white.withOpacity(0.85),
                           fontSize: 13,
                         ),
                       ),
@@ -389,7 +455,49 @@ class AdminDashboardContent extends StatelessWidget {
               ],
             ),
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 16),
+
+          // Super Admin Municipality Switcher Dropdown
+          if (userRole == 'super_admin') ...[
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+              decoration: BoxDecoration(
+                color: settings.isDarkMode ? const Color(0xFF1F2937) : Colors.white,
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: const Color(0xFF4F46E5).withOpacity(0.3)),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.account_balance, color: Color(0xFF4F46E5), size: 20),
+                  const SizedBox(width: 10),
+                  const Text("Filter Region: ", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                  Expanded(
+                    child: DropdownButtonHideUnderline(
+                      child: DropdownButton<String>(
+                        value: municipalityFilter ?? 'All',
+                        isExpanded: true,
+                        style: TextStyle(
+                          color: settings.isDarkMode ? Colors.white : Colors.black,
+                          fontWeight: FontWeight.w600,
+                          fontSize: 13,
+                        ),
+                        dropdownColor: settings.isDarkMode ? const Color(0xFF1F2937) : Colors.white,
+                        items: const [
+                          DropdownMenuItem(value: 'All', child: Text('All Municipalities')),
+                          DropdownMenuItem(value: 'Thrikkakara Municipality', child: Text('🏛️ Thrikkakara Municipality')),
+                          DropdownMenuItem(value: 'Kalamassery Municipality', child: Text('🏛️ Kalamassery Municipality')),
+                        ],
+                        onChanged: (val) {
+                          if (val != null) onMunicipalityChanged?.call(val);
+                        },
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+          ],
 
           // 2. Live Dashboard Stats Grid
           Text(
@@ -411,7 +519,11 @@ class AdminDashboardContent extends StatelessWidget {
                 return _buildStatsShimmer(settings);
               }
 
-              final complaints = snapshot.data!;
+              var complaints = snapshot.data!;
+              if (municipalityFilter != null && municipalityFilter != 'All') {
+                complaints = complaints.where((c) => c.municipality == municipalityFilter).toList();
+              }
+
               int total = complaints.length;
               int pending = complaints.where((c) => c.status == 'Pending').length;
               int inProgress = complaints.where((c) => c.status == 'In Progress').length;
@@ -423,12 +535,12 @@ class AdminDashboardContent extends StatelessWidget {
                 crossAxisCount: 2,
                 mainAxisSpacing: 12,
                 crossAxisSpacing: 12,
-                childAspectRatio: 1.4,
+                childAspectRatio: 1.25,
                 children: [
-                  _buildStatCard("Total", total.toString(), Icons.assignment_rounded, const Color(0xFF3B82F6), settings),
-                  _buildStatCard("Pending", pending.toString(), Icons.pending_actions_rounded, const Color(0xFFF59E0B), settings),
-                  _buildStatCard("In Progress", inProgress.toString(), Icons.sync_rounded, const Color(0xFF8B5CF6), settings),
-                  _buildStatCard("Resolved", resolved.toString(), Icons.check_circle_rounded, const Color(0xFF10B981), settings),
+                  _buildStatCard("Total", total.toString(), Icons.assignment_rounded, const Color(0xFF3B82F6), settings, onTap: () => onFilterTap?.call('All')),
+                  _buildStatCard("Pending", pending.toString(), Icons.pending_actions_rounded, const Color(0xFFF59E0B), settings, onTap: () => onFilterTap?.call('Pending')),
+                  _buildStatCard("In Progress", inProgress.toString(), Icons.sync_rounded, const Color(0xFF8B5CF6), settings, onTap: () => onFilterTap?.call('In Progress')),
+                  _buildStatCard("Resolved", resolved.toString(), Icons.check_circle_rounded, const Color(0xFF10B981), settings, onTap: () => onFilterTap?.call('Resolved')),
                 ],
               );
             },
@@ -552,7 +664,11 @@ class AdminDashboardContent extends StatelessWidget {
               if (snapshot.connectionState == ConnectionState.waiting) {
                 return const Center(child: CircularProgressIndicator());
               }
-              if (snapshot.hasError || !snapshot.hasData || snapshot.data!.isEmpty) {
+              var complaintsList = snapshot.data!;
+              if (municipalityFilter != null && municipalityFilter != 'All') {
+                complaintsList = complaintsList.where((c) => c.municipality == municipalityFilter).toList();
+              }
+              if (complaintsList.isEmpty) {
                 return Container(
                   padding: const EdgeInsets.all(20),
                   decoration: _cardDecoration(settings),
@@ -561,13 +677,13 @@ class AdminDashboardContent extends StatelessWidget {
                       children: [
                         Icon(Icons.inbox_rounded, size: 40, color: Colors.grey),
                         SizedBox(height: 8),
-                        Text("No complaints yet", style: TextStyle(color: Colors.grey)),
+                        Text("No complaints found for this region", style: TextStyle(color: Colors.grey)),
                       ],
                     ),
                   ),
                 );
               }
-              final complaints = snapshot.data!.take(3).toList();
+              final complaints = complaintsList.take(3).toList();
               return Container(
                 decoration: _cardDecoration(settings),
                 child: ListView.separated(
@@ -671,7 +787,7 @@ class AdminDashboardContent extends StatelessWidget {
       crossAxisCount: 2,
       mainAxisSpacing: 12,
       crossAxisSpacing: 12,
-      childAspectRatio: 1.4,
+      childAspectRatio: 1.25,
       children: [
         _buildStatCard("Total", "...", Icons.assignment_rounded, const Color(0xFF3B82F6), settings),
         _buildStatCard("Pending", "...", Icons.pending_actions_rounded, const Color(0xFFF59E0B), settings),
@@ -681,50 +797,67 @@ class AdminDashboardContent extends StatelessWidget {
     );
   }
 
-  Widget _buildStatCard(String title, String value, IconData icon, Color color, SettingsProvider settings) {
-    return Container(
-      decoration: BoxDecoration(
-        color: settings.isDarkMode ? color.withOpacity(0.1) : color.withOpacity(0.05),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: color.withOpacity(0.2), width: 1.5),
-      ),
-      padding: const EdgeInsets.all(12),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Container(
-                padding: const EdgeInsets.all(6),
-                decoration: BoxDecoration(
-                  color: color.withOpacity(0.15),
-                  shape: BoxShape.circle,
+  Widget _buildStatCard(
+    String title,
+    String value,
+    IconData icon,
+    Color color,
+    SettingsProvider settings, {
+    VoidCallback? onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: Container(
+        decoration: BoxDecoration(
+          color: settings.isDarkMode ? color.withOpacity(0.1) : color.withOpacity(0.05),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: color.withOpacity(0.2), width: 1.5),
+        ),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(6),
+                  decoration: BoxDecoration(
+                    color: color.withOpacity(0.15),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(icon, color: color, size: 20),
                 ),
-                child: Icon(icon, color: color, size: 20),
+                Icon(Icons.arrow_forward_ios_rounded, color: color.withOpacity(0.4), size: 12),
+              ],
+            ),
+            const Spacer(),
+            FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Text(
+                value,
+                style: TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.w800,
+                  color: settings.isDarkMode ? Colors.white : Colors.black87,
+                ),
               ),
-            ],
-          ),
-          const Spacer(),
-          Text(
-            value,
-            style: TextStyle(
-              fontSize: 24,
-              fontWeight: FontWeight.w800,
-              color: settings.isDarkMode ? Colors.white : Colors.black87,
             ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            title,
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
-              color: settings.isDarkMode ? Colors.grey[400] : Colors.grey[600],
+            const SizedBox(height: 4),
+            Text(
+              title,
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: settings.isDarkMode ? Colors.grey[400] : Colors.grey[600],
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -832,12 +965,39 @@ class AdminDashboardContent extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                   ),
                   const SizedBox(height: 4),
-                  Text(
-                    '${complaint.createdAt.day}/${complaint.createdAt.month}/${complaint.createdAt.year}',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: settings.isDarkMode ? Colors.grey[400] : Colors.grey[500],
-                    ),
+                  Row(
+                    children: [
+                      Text(
+                        '${complaint.createdAt.day}/${complaint.createdAt.month}/${complaint.createdAt.year}',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: settings.isDarkMode ? Colors.grey[400] : Colors.grey[500],
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: Colors.orange.withOpacity(0.15),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(Icons.thumb_up_alt, size: 10, color: Colors.orange),
+                            const SizedBox(width: 3),
+                            Text(
+                              '${complaint.supportCount}',
+                              style: const TextStyle(
+                                fontSize: 11,
+                                color: Colors.orange,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),

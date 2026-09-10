@@ -255,6 +255,9 @@ class _UserComplaintstatusState extends State<UserComplaintstatus> {
 
   Widget _buildComplaintCard(
       ComplaintModel complaint, SettingsProvider settings) {
+    final currentUserId = FirebaseAuth.instance.currentUser?.uid ?? '';
+    final isSupportedReport = complaint.userId != currentUserId;
+
     return GestureDetector(
       key: ValueKey(complaint.id),
       onTap: () {
@@ -349,20 +352,27 @@ class _UserComplaintstatusState extends State<UserComplaintstatus> {
 
             const SizedBox(height: 16),
 
-            // ===== CATEGORY & PRIORITY =====
-            Row(
+            // ===== CATEGORY, PRIORITY & SUPPORT BADGE =====
+            Wrap(
+              spacing: 8,
+              runSpacing: 6,
               children: [
                 _buildChip(
                   complaint.category,
                   settings.isDarkMode ? Colors.grey[700]! : Colors.grey.shade100,
                   settings.isDarkMode ? Colors.white70 : Colors.black87,
                 ),
-                const SizedBox(width: 8),
                 _buildChip(
                   complaint.priority,
                   _getPriorityColor(complaint.priority).withOpacity(0.15),
                   _getPriorityColor(complaint.priority),
                 ),
+                if (isSupportedReport)
+                  _buildChip(
+                    '👍 Supported Report',
+                    Colors.orange.withOpacity(0.15),
+                    Colors.orange.shade800,
+                  ),
               ],
             ),
 
@@ -535,8 +545,8 @@ class _UserComplaintstatusState extends State<UserComplaintstatus> {
                 if (complaint.latitude != null && complaint.longitude != null)
                   const SizedBox(width: 12),
 
-                // Delete button (only for Pending complaints)
-                if (complaint.status == 'Pending')
+                // Delete button (only for author of Pending complaints)
+                if (complaint.status == 'Pending' && complaint.userId == currentUserId)
                   Expanded(
                     child: ElevatedButton.icon(
                       onPressed: () => _deleteComplaint(complaint),

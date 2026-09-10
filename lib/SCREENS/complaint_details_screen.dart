@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:civicfic/models/complaint_model.dart';
 import 'package:civicfic/models/notification_model.dart';
 import 'package:civicfic/services/firestore_service.dart';
@@ -26,11 +27,59 @@ class ComplaintDetailsScreen extends StatefulWidget {
 class _ComplaintDetailsScreenState extends State<ComplaintDetailsScreen> {
   late ComplaintModel _complaint;
   final FirestoreService _firestoreService = FirestoreService();
+  bool _isSupporting = false;
 
   @override
   void initState() {
     super.initState();
     _complaint = widget.complaint;
+  }
+
+  // Handle citizen support / upvote
+  Future<void> _handleSupportComplaint(String userId) async {
+    if (_complaint.supportedUserIds.contains(userId)) return;
+
+    setState(() => _isSupporting = true);
+
+    try {
+      await _firestoreService.supportComplaint(_complaint.id, userId);
+
+      final updatedList = List<String>.from(_complaint.supportedUserIds)..add(userId);
+
+      setState(() {
+        _complaint = ComplaintModel(
+          id: _complaint.id,
+          title: _complaint.title,
+          description: _complaint.description,
+          category: _complaint.category,
+          priority: _complaint.priority,
+          location: _complaint.location,
+          imageBase64: _complaint.imageBase64,
+          userId: _complaint.userId,
+          userName: _complaint.userName,
+          userEmail: _complaint.userEmail,
+          status: _complaint.status,
+          createdAt: _complaint.createdAt,
+          updatedAt: DateTime.now(),
+          latitude: _complaint.latitude,
+          longitude: _complaint.longitude,
+          adminRemark: _complaint.adminRemark,
+          municipality: _complaint.municipality,
+          supportCount: _complaint.supportCount + 1,
+          supportedUserIds: updatedList,
+        );
+        _isSupporting = false;
+      });
+
+      if (mounted) {
+        NotificationService().showSuccess(context, 'Thank you for supporting this report! 👍');
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isSupporting = false);
+        NotificationService().showError(context, 'Failed to support: $e');
+      }
+    }
   }
 
   // Full-screen image viewer dialog with interactive zoom
@@ -259,6 +308,9 @@ class _ComplaintDetailsScreenState extends State<ComplaintDetailsScreen> {
           latitude: _complaint.latitude,
           longitude: _complaint.longitude,
           adminRemark: remark.isEmpty ? null : remark,
+          municipality: _complaint.municipality,
+          supportCount: _complaint.supportCount,
+          supportedUserIds: _complaint.supportedUserIds,
         );
       });
 
@@ -334,6 +386,8 @@ class _ComplaintDetailsScreenState extends State<ComplaintDetailsScreen> {
     final settings = Provider.of<SettingsProvider>(context);
     final isDark = settings.isDarkMode;
     final hasImage = _complaint.imageBase64 != null && _complaint.imageBase64!.trim().isNotEmpty;
+    final currentUserId = FirebaseAuth.instance.currentUser?.uid ?? '';
+    final bool hasSupported = _complaint.supportedUserIds.contains(currentUserId);
 
     return Scaffold(
       backgroundColor: isDark ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC),
@@ -461,13 +515,15 @@ class _ComplaintDetailsScreenState extends State<ComplaintDetailsScreen> {
                   ),
                   const SizedBox(height: 16),
 
-                  // Category, Priority, Date Chips
+                  // Category, Priority, Municipality, Support Counter Chips
                   Wrap(
                     spacing: 8,
                     runSpacing: 8,
                     children: [
                       _buildChip(_complaint.category, const Color(0xFF2563EB).withOpacity(0.1), const Color(0xFF2563EB)),
                       _buildChip('${_complaint.priority} Priority', _getPriorityColor(_complaint.priority).withOpacity(0.1), _getPriorityColor(_complaint.priority)),
+                      _buildChip('🏛️ ${_complaint.municipality}', Colors.purple.withOpacity(0.1), Colors.purple.shade700),
+                      _buildChip('👍 ${_complaint.supportCount} Citizens Supported', Colors.orange.withOpacity(0.1), Colors.orange.shade800),
                       _buildChip(_formatDate(_complaint.createdAt), isDark ? Colors.grey[800]! : Colors.grey[200]!, isDark ? Colors.grey[300]! : Colors.grey[700]!),
                     ],
                   ),
@@ -543,6 +599,50 @@ class _ComplaintDetailsScreenState extends State<ComplaintDetailsScreen> {
                       ),
                     ),
                     const SizedBox(height: 16),
+                    _buildSectionCard(
+                      title: 'Citizen Support & Endorsements',
+                      icon: Icons.thumb_up_alt_outlined,
+                      isDark: isDark,
+                      child: Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: Colors.orange.withOpacity(0.15),
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(Icons.thumb_up, color: Colors.orange, size: 24),
+                          ),
+                          const SizedBox(width: 14),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  '${_complaint.supportCount} Citizen${_complaint.supportCount == 1 ? '' : 's'} Supported',
+                                  style: TextStyle(
+                                    fontSize: 17,
+                                    fontWeight: FontWeight.bold,
+                                    color: isDark ? Colors.white : Colors.black87,
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  _complaint.supportCount <= 1
+                                      ? '1 resident reported this issue.'
+                                      : '${_complaint.supportCount} residents in this region have endorsed and supported this report.',
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    color: isDark ? Colors.grey[400] : Colors.grey[600],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 16),
                   ],
 
                   // Admin Remark Card (If present)
@@ -585,6 +685,36 @@ class _ComplaintDetailsScreenState extends State<ComplaintDetailsScreen> {
                       ),
                     ),
                     const SizedBox(height: 24),
+                  ],
+
+                  // Support Complaint Button for Citizens
+                  if (!widget.isAdmin) ...[
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton.icon(
+                        onPressed: (hasSupported || _isSupporting)
+                            ? null
+                            : () => _handleSupportComplaint(currentUserId),
+                        icon: _isSupporting
+                            ? const SizedBox(
+                                width: 18,
+                                height: 18,
+                                child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                              )
+                            : Icon(hasSupported ? Icons.check_circle : Icons.thumb_up_alt, size: 18),
+                        label: Text(hasSupported ? 'Already Supported 👍' : 'Support Complaint 👍'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF4F46E5),
+                          foregroundColor: Colors.white,
+                          disabledBackgroundColor: isDark ? Colors.grey[800] : Colors.grey[300],
+                          disabledForegroundColor: isDark ? Colors.grey[500] : Colors.grey[600],
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                          elevation: hasSupported ? 0 : 2,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
                   ],
 
                   // Bottom Action Buttons

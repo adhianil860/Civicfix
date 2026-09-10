@@ -59,7 +59,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
       NotificationService().showSuccess(context, 'Login successful!');
 
-      if (role == "admin") {
+      if (role == "admin" || role == "sub_admin" || role == "super_admin") {
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (_) => const AdminHomeScreen()),
